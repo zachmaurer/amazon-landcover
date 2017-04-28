@@ -1,0 +1,13 @@
+This readme will explain how to do kaggle submissions via CLI
+
+First, get the kaggle-cli by installing it via pip
+pip install kaggle-cli
+
+Next, download the data:
+$ kg download -u 'username' -p 'password' -c 'competition'
+
+Anytime you wwant to makea submission, do this, with 'entry' being the .csv file to submit:
+ $ kg submit 'entry' -u 'username' -p 'password' -c 'competition' -m 'message'
+
+The competition for the amazon satellite classification:
+planet-understanding-the-amazon-from-space
