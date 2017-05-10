@@ -2,3 +2,4 @@
 *.pyc 
 input/*
 .env/*
+credentials
