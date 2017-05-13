@@ -96,52 +96,29 @@ class DynamicDataset(Dataset):
 
         self.data_path = data_path
         
-        self.data_tensor = np.zeros((buffer_size,3,256,256))
-        self.backup_buffer = np.zeros(self.data_tensor.shape)
-        
-        self.buffer_flag = -1
+        self.data_np = np.zeros((buffer_size,3,256,256))
         
         for i in range(self.buffer_index*buffer_size,self.buffer_index*buffer_size+1):
-            self.data_tensor[i,:,:,:] = self.load_image(i)
-        self.data_tensor = torch.from_numpy(self.data_tensor)
+            self.data_np[i,:,:,:] = self.load_image(i)
+        self.data_tensor = torch.from_numpy(self.data_np)
         
     def load_image(self, idx):
         image_name = self.labels_df['image_name'][idx]
         im = Image.open(self.data_path + image_name + '.jpg')
         im = np.array(im)[:,:,:3]
         im = np.reshape(im,(im.shape[2],im.shape[0],im.shape[1]))
-        return im  
+        return im
     
     def fill_buffer(self):
-        if self.buffer_index%2 == 0:
-            del self.backup_buffer
-            backup_buffer_np = np.zeros((self.buffer_size,3,256,256)) #does this clear the GPU RAM properly? Monitor memory..
-            for i in range(int(self.buffer_size)):
-                backup_buffer_np[i,:,:,:] = self.load_image(i+self.buffer_index*self.buffer_size)
-            self.backup_buffer = torch.from_numpy(backup_buffer_np) #should this happen halfway, or at the end?
-            del backup_buffer_np
-        else:
-            del self.data_tensor
-            data_tensor_np = np.zeros((self.buffer_size,3,256,256)) #does this clear the GPU RAM properly? Monitor memory..
-            for i in range(int(self.buffer_size)):
-                data_tensor_np[i,:,:,:] = self.load_image(i+self.buffer_index*self.buffer_size)
-            self.data_tensor = torch.from_numpy(data_tensor_np) #should this happen halfway, or at the end?
-            del data_tensor_np
+        for i in range(int(self.buffer_size)):
+            self.data_tensor[i,:,:,:] = torch.from_numpy(self.load_image(i+self.buffer_index*self.buffer_size))
+        self.buffer_index += 1
 
     def __getitem__(self, index):
-        if index>(1+self.buffer_index)*self.buffer_size/2:
+        if index>(self.buffer_index)*self.buffer_size:
             self.fill_buffer()
-        #elif index>int(3*self.buffer_index*self.buffer_size/4):
-        #    self.backup_buffer = torch.from_numpy(self.backup_buffer)
-        if index>=self.buffer_index*self.buffer_size:
-            self.buffer_index += 1
-        if self.buffer_index%2 == 1:
-            return self.data_tensor[index%self.buffer_size], self.labels_tensor[index%self.buffer_size]
-        else:
-            return self.backup_buffer[index%self.buffer_size], self.labels_tensor[index%self.buffer_size]
-            #self.data_tensor = self.backup_buffer #does this do assignment properly w/o causing a GPU/CPU RAM memory leak?
-        #return self.data_tensor[index%self.buffer_size], self.labels_tensor[index%self.buffer_size]
-
+        return self.data_tensor[index%self.buffer_size], self.labels_tensor[index%self.buffer_size]
+        
     def __len__(self):
         return self.num_examples
 
