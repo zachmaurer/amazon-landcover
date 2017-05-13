@@ -3,6 +3,7 @@
 import torch
 from torch.utils.data.dataset import Dataset
 from torch.utils.data.sampler import SequentialSampler
+from torchvision import transforms
 from sklearn.preprocessing import MultiLabelBinarizer
 import pandas as pd
 import numpy as np
@@ -96,11 +97,13 @@ class DynamicDataset(Dataset):
 
         self.data_path = data_path
         
-        self.data_np = np.zeros((buffer_size,3,256,256))
+        self.data_tensor = torch.zeros((buffer_size,3,256,256))
+        
+        self.current_image = None
         
         for i in range(self.buffer_index*buffer_size,self.buffer_index*buffer_size+1):
-            self.data_np[i,:,:,:] = self.load_image(i)
-        self.data_tensor = torch.from_numpy(self.data_np)
+            self.current_image = self.load_image(i)
+            self.data_tensor[i,:,:,:] =  self.current_image
         
     def load_image(self, idx):
         image_name = self.labels_df['image_name'][idx]
@@ -109,14 +112,17 @@ class DynamicDataset(Dataset):
         im = np.reshape(im,(im.shape[2],im.shape[0],im.shape[1]))
         return im
     
-    def fill_buffer(self):
-        for i in range(int(self.buffer_size)):
-            self.data_tensor[i,:,:,:] = torch.from_numpy(self.load_image(i+self.buffer_index*self.buffer_size))
-        self.buffer_index += 1
+    def fill_buffer(self,start,end):
+        for i in range(start,end):
+            self.data_tensor[i,:,:,:] = self.load_image(i+self.buffer_index*self.buffer_size)
+        if end==self.buffer_size:
+            self.buffer_index += 1
 
     def __getitem__(self, index):
-        if index>(self.buffer_index)*self.buffer_size:
-            self.fill_buffer()
+        if index>int((2*self.buffer_index+1)*self.buffer_size/2):
+            self.fill_buffer(0,int(self.buffer_size/2))
+        elif index>self_buffer_index*self.buffer_size:
+            self.fill_buffer(int(self.buffer_size/2),self.buffer_size)
         return self.data_tensor[index%self.buffer_size], self.labels_tensor[index%self.buffer_size]
         
     def __len__(self):
@@ -129,7 +135,6 @@ def createFastLoaderWithSampler(data_path=train_data_path, labels_path=train_lab
                  num_examples=1000, buffer_size=1000, rand_seed = None, batch_size=100, num_workers=8):
     dynamic_dataset = DynamicDataset(data_path, labels_path,
                  num_examples, buffer_size, rand_seed)
-    print(len(dynamic_dataset))
     return torch.utils.data.DataLoader(dynamic_dataset, batch_size=100, 
                                        shuffle=(rand_seed is not None), sampler=SequentialSampler(dynamic_dataset),
                                        num_workers=num_workers)
