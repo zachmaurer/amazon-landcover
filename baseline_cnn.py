@@ -6,6 +6,7 @@ from utils import NaiveDataset
 from utils import Config, parseConfig
 from utils.layers import Flatten
 from utils.constants import NUM_CLASSES, TRAIN_DATA_PATH, TRAIN_LABELS_PATH
+from utils import visualize
 
 def createModel(config):
     model = nn.Sequential(
@@ -51,7 +52,8 @@ def main():
     model = createModel(config)
 
     # Train and Eval Model
-    train(model, config)
+    results = train(model, config)
+    visualize.plot_results(results, config)
     
 
 if __name__ == '__main__':

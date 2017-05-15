@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import os
 
 # Jupyter Boilerplate
 # TODO: Can this be run as a client function outside of a notebook?
@@ -18,7 +19,7 @@ import matplotlib.pyplot as plt
 #               - val_acc
 # 
 
-def plot_results(results_dict, config = None):
+def plot_results(results_dict, config = None, display = False):
     #results_dict has keys train_loss, train_acc, val_acc for lists of value vs iteration number
     loss_history = results_dict['train_loss']
     train_acc_history = results_dict['train_acc']
@@ -37,7 +38,8 @@ def plot_results(results_dict, config = None):
     plt.xlabel('iteration_num')
     plt.legend(loc='lower right')
     plt.gcf().set_size_inches(15, 12)
-    plt.show()
+    if display:
+        plt.show()
     if config:
-        pass
+        plt.savefig(os.path.join(config.plots_dest, 'results.png'), bbox_inches='tight')
 
