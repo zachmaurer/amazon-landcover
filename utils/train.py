@@ -1,6 +1,7 @@
 import torch.nn as nn
 import torch.optim as optim
 from torch.autograd import Variable
+import gc
 
 # Function: check_accuracy
 # 
@@ -72,7 +73,8 @@ def train(model, config, loss_fn = None, optimizer = None):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            
+            gc.collect()
+
     # Final Evaluation
     if config.train_loader:
                     train_acc_history.append(check_accuracy(model, config, config.train_loader, "train"))
