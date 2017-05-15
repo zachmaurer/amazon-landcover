@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 #               - train_acc
 #               - val_acc
 # 
+
 def plot_results(results_dict, config = None):
     #results_dict has keys train_loss, train_acc, val_acc for lists of value vs iteration number
     loss_history = results_dict['train_loss']
@@ -38,7 +39,5 @@ def plot_results(results_dict, config = None):
     plt.gcf().set_size_inches(15, 12)
     plt.show()
     if config:
-        # TODO: save plots to file
-
-
+        pass
 

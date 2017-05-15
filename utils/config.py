@@ -2,6 +2,7 @@ from os import path, mkdir
 from datetime import datetime
 from torch import FloatTensor
 from torch import cuda
+import argparse
 
 # Class: Config
 # ----
@@ -12,11 +13,13 @@ class Config:
   def __init__(self, args=None): 
 
     # Model and Experiment Settings
-    self.epochs = args.e if args else None
+    self.epochs = args.e if args else 1
     self.batch_size = args.bs if args else None
     self.num_train = args.nt if args else None
     self.num_val = args.nv if args else None
     self.lr = args.lr if args else None
+    self.print_every = args.pf if args else None
+    self.eval_every = args.ef if args else None
 
     # GPU Settings
     self.use_gpu = args.gpu if args else None
@@ -29,14 +32,15 @@ class Config:
     self.test_loader = None
     
     # Metadata
-    self.title = '_' + args.title  if args else ""
+    self.title = args.title  if args else ""
     self.timestamp = datetime.now().strftime("%m%d_%H.%M.%S")
-    self.experiment_id = "{}_{}".format(self.title, self.timestamp)
+    self.experiment_id = "{}_{}".format(self.title, self.timestamp) if self.title else "{}".format(self.timestamp)
 
     # Saved Files Params
-    self._save_path = "./experiments" # Never used by client
+    self._save_path = args.path if args.path else "./experiments" 
     self.save_dest = path.join(self._save_path, self.experiment_id) # Root folder for experiment
     self.log_dest = path.join(self.save_dest, "logs") # logs
+    self.logs = path.join(self.log_dest, "console.txt") # logs
     self.checkpoint_dest = path.join(self.save_dest, "checkpoints") # checkpoints
     self.plots_dest = path.join(self.save_dest, "plots") # plots
     self._createSubfolders() # TODO: *args?
@@ -46,12 +50,13 @@ class Config:
 
   def __str__(self):
     config_str = "Config for experiment:   {}".format(self.experiment_id)
-    config_str += "\n\gpu: {}".format(self.use_gpu)
+    config_str += "\nUsing gpu?   {}".format(self.use_gpu)
     config_str += "\n\tepochs: {}".format(self.epochs)
     config_str += "\n\tbatch_size: {}".format(self.batch_size)
-    config_str += "\n\learning_rate: {}".format(self.lr)
-    config_str += "\n\tnum_train examples (if None using all): {}".format(self.num_train)
-    config_str += "\n\tnum_val examples (if None using all): {}".format(self.num_val)  
+    config_str += "\n\tlearning_rate: {}".format(self.lr)
+    config_str += "\n\tnum_train (if None using all): {}".format(self.num_train)
+    config_str += "\n\tnum_val (if None using all): {}".format(self.num_val)  
+    config_str += "\n"
     config_str += "\n\tsave_dest: {}".format(self.save_dest)
     return config_str
 
@@ -66,6 +71,28 @@ class Config:
       mkdir(self.log_dest)
       mkdir(self.checkpoint_dest)
       mkdir(self.plots_dest)
+
+  def log(self, message, echo = True):
+    if echo:
+      print(message)
+    with open(self.logs, 'a') as f:
+        print(message, file = f)
+
+
+def parseConfig(description="Default Model Description"):
+  parser = argparse.ArgumentParser(description=description)
+  parser.add_argument('--bs', type=int, help='batch size for training', default = 20)
+  parser.add_argument('--e', type=int, help='number of epochs', default = 10)
+  parser.add_argument('--nt', type=int, help='number of training examples', default = None)
+  parser.add_argument('--nv', type=int, help='number of validation examples', default = None)
+  parser.add_argument('--lr', type=float, help='learning rate', default = 1e-3)
+  parser.add_argument('--gpu', action='store_true', help='use gpu', default = False)
+  parser.add_argument('--pf', type=int, help='print frequency', default = None)
+  parser.add_argument('--ef', type=int, help='eval frequency', default = None)
+  parser.add_argument('--title', help='experiment title', default = None)
+  parser.add_argument('--path', help='save path for results, logs, checkpoints', default = "./experiments")
+  args = parser.parse_args()
+  return args
 
 
 # Class: ResultsLogger

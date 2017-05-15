@@ -4,3 +4,4 @@ input/*
 .env/*
 credentials
 experiments/*
+__pycache__/*
