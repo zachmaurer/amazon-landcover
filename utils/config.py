@@ -71,6 +71,8 @@ class Config:
     config_str += "\n\tnum_val (if None using all): {}".format(self.num_val)  
     config_str += "\n"
     config_str += "\n\tsave_dest: {}".format(self.save_dest)
+    config_str += "\n\tprint_every: {}".format(self.print_every)
+    config_str += "\n\teval_every: {}".format(self.eval_every)
     return config_str
 
   def _createSubfolders(self):
