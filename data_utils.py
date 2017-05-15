@@ -121,7 +121,7 @@ class DynamicDataset(Dataset):
     def __getitem__(self, index):
         if index>int((2*self.buffer_index+1)*self.buffer_size/2):
             self.fill_buffer(0,int(self.buffer_size/2))
-        elif index>self_buffer_index*self.buffer_size:
+        elif index>self.buffer_index*self.buffer_size:
             self.fill_buffer(int(self.buffer_size/2),self.buffer_size)
         return self.data_tensor[index%self.buffer_size], self.labels_tensor[index%self.buffer_size]
         
@@ -132,9 +132,10 @@ class DynamicDataset(Dataset):
 #We needed to create this helper function to produce a dataloader object with the appropraite sampler. Without this helper
 #function, there is a risk that the Sampler would not be able to sample random pictures properly
 def createFastLoaderWithSampler(data_path=train_data_path, labels_path=train_labels_path,
-                 num_examples=1000, buffer_size=1000, rand_seed = None, batch_size=100, num_workers=8):
-    dynamic_dataset = DynamicDataset(data_path, labels_path,
-                 num_examples, buffer_size, rand_seed)
+                                                        num_examples=1000, buffer_size=1000, 
+                                                        rand_seed = None, batch_size=100, num_workers=8):
+
+    dynamic_dataset = DynamicDataset(data_path, labels_path, num_examples, buffer_size, rand_seed)
     return torch.utils.data.DataLoader(dynamic_dataset, batch_size=100, 
                                        shuffle=(rand_seed is not None), sampler=SequentialSampler(dynamic_dataset),
                                        num_workers=num_workers)
