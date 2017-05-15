@@ -1,15 +1,19 @@
 NUM_CLASSES = 17
 
-NUM_TRAIN = None
-NUM_VAL = None
-NUM_TEST= None
+NUM_TRAIN = 40479
+NUM_TEST= 61191
 
-TRAIN_DATA_PATH = './input/train-jpg/'
+IMG_W = None
+IMG_H = None
+
+TRAIN_DATA_PATH = "./input/train-jpg/"
+TRAIN_LABELS_PATH = "./input/train.csv"
+#TRAIN_LABELS_PATH = "./input/train_v2.csv"
+
 TEST_DATA_PATH = './input/test-jpg/'
-TRAIN_LABELS_PATH ='./input/train_v2.csv' 
 
 
-# TODO: double check
+# TODO: double check list
 LABEL_MAP = {
         0: 'agriculture',
         1: 'artisinal_mine',

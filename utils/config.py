@@ -10,22 +10,24 @@ import argparse
 # TODO
 #
 class Config:
-  def __init__(self, args=None): 
-
-    # Model and Experiment Settings
-    self.epochs = args.e if args else 1
-    self.batch_size = args.bs if args else None
-    self.num_train = args.nt if args else None
-    self.num_val = args.nv if args else None
-    self.lr = args.lr if args else None
-    self.print_every = args.pf if args else None
-    self.eval_every = args.ef if args else None
-
-    # GPU Settings
+  def __init__(self, args = None, test = False): 
+    if test or (args and args.test):
+      self._testSettings()   
+    else:
+      # Model and Experiment Settings
+      self.epochs = args.e if args else None
+      self.batch_size = args.bs if args else None
+      self.num_train = args.nt if args else None
+      self.num_val = args.nv if args else None
+      self.lr = args.lr if args else None
+      self.print_every = args.pf if args else None
+      self.eval_every = args.ef if args else None
+      # GPU Settings
+    
     self.use_gpu = args.gpu if args else None
     self.dtype = cuda.FloatTensor if self.use_gpu else FloatTensor
     if self.use_gpu: assert(cuda.is_available())
-
+    
     # Loaders
     self.train_loader = None
     self.val_loader = None
@@ -47,6 +49,17 @@ class Config:
    
     # Logger
     self.logger = ResultsLogger(self.log_dest)
+
+  def _testSettings(self):
+    # Test Settings
+    self.epochs = 5
+    self.batch_size = 10
+    self.num_train = 100
+    self.num_val = 100
+    self.lr = 1e-3
+    self.print_every = 5
+    self.eval_every = 50
+
 
   def __str__(self):
     config_str = "Config for experiment:   {}".format(self.experiment_id)
@@ -76,11 +89,12 @@ class Config:
     if echo:
       print(message)
     with open(self.logs, 'a') as f:
-        print(message, file = f)
+      print(message, file = f)
 
 
 def parseConfig(description="Default Model Description"):
   parser = argparse.ArgumentParser(description=description)
+  parser.add_argument('--test', action='store_true', help='sanity test to run model on small input', default = False)
   parser.add_argument('--bs', type=int, help='batch size for training', default = 20)
   parser.add_argument('--e', type=int, help='number of epochs', default = 10)
   parser.add_argument('--nt', type=int, help='number of training examples', default = None)

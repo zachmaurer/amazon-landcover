@@ -49,10 +49,10 @@ def train(model, config, loss_fn = None, optimizer = None):
     model.train()
     for epoch in range(config.epochs):
         config.log('Starting epoch %d / %d' % (epoch + 1, config.epochs))
-        for t, (x, y) in enumerate(config.loader_train):
+        for t, (x, y) in enumerate(config.train_loader):
             # Train
             x_var = Variable(x.type(config.dtype))
-            y_var = Variable(y.type(config.dtype).long())
+            y_var = Variable(y.type(config.dtype)) # removed .long() ?
             scores = model(x_var)            
             loss = loss_fn(scores, y_var)
             loss_history.append(loss.data[0])
@@ -63,8 +63,10 @@ def train(model, config, loss_fn = None, optimizer = None):
 
             # Evaluate on train and val sets
             if config.eval_every and (t + 1) % config.eval_every == 0:
-                train_acc_history.append(check_accuracy(model, config, config.loader_train, "train"))
-                val_acc_history.append(check_accuracy(model, config, config.loader_val, "val"))
+                if config.train_loader:
+                    train_acc_history.append(check_accuracy(model, config, config.train_loader, "train"))
+                if config.val_loader:
+                    val_acc_history.append(check_accuracy(model, config, config.val_loader, "val"))
          
             # Backprop
             optimizer.zero_grad()
@@ -72,8 +74,10 @@ def train(model, config, loss_fn = None, optimizer = None):
             optimizer.step()
             
     # Final Evaluation
-    check_accuracy(model, config, config.loader_train, "train")
-    check_accuracy(model, config, config.loader_val, "val")
+    if config.train_loader:
+                    train_acc_history.append(check_accuracy(model, config, config.train_loader, "train"))
+    if config.val_loader:
+        val_acc_history.append(check_accuracy(model, config, config.val_loader, "val"))
     results_dict = {
         'train_loss': loss_history,
         'train_acc': train_acc_history,

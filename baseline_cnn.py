@@ -1,9 +1,11 @@
 from torch import nn
+from torch.utils.data import DataLoader
 
 from utils import train
-#from utils import NaiveDataset
+from utils import NaiveDataset
 from utils import Config, parseConfig
 from utils.layers import Flatten
+from utils.constants import NUM_CLASSES, TRAIN_DATA_PATH, TRAIN_LABELS_PATH
 
 def createModel(config):
     model = nn.Sequential(
@@ -20,7 +22,7 @@ def createModel(config):
       
                       # Aggregation Layers
                       Flatten(), # see above for explanation
-                      nn.Linear(6272, 2048), # affine layer
+                      nn.Linear(508032, 2048), # affine layer
                       nn.ReLU(inplace=True),
                       nn.BatchNorm1d(2048, affine = True),
                       nn.Dropout(p=0.55, inplace = True),
@@ -28,7 +30,7 @@ def createModel(config):
                       nn.ReLU(inplace=True),
                       nn.BatchNorm1d(512, affine = True),
                       nn.Dropout(p=0.3, inplace = True),
-                      nn.Linear(512, 10),
+                      nn.Linear(512, NUM_CLASSES),
             )
     model = model.type(config.dtype)
     return model 
@@ -40,13 +42,16 @@ def main():
     config = Config(args)
     config.log(config)
 
+    # Load Data
+    train_dataset = NaiveDataset(TRAIN_DATA_PATH, TRAIN_LABELS_PATH, num_examples = config.num_train)
+    train_loader = DataLoader(train_dataset, batch_size = config.batch_size, num_workers = 4)
+    config.train_loader = train_loader
+
     # Create Model
     model = createModel(config)
 
-    # Train Model
+    # Train and Eval Model
     train(model, config)
-
-    # Final Eval
     
 
 if __name__ == '__main__':

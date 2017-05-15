@@ -7,7 +7,6 @@ from sklearn.preprocessing import MultiLabelBinarizer
 import pandas as pd
 import numpy as np
 from PIL import Image
-from constants import TRAIN_DATA_PATH, TRAIN_LABELS_PATH
 
 
 #this is the naive implementation which pulls from file every time you get an item. no caching. Probably not useful anymore
@@ -29,8 +28,7 @@ class NaiveDataset(Dataset):
         im = np.reshape(im,(im.shape[2],im.shape[0],im.shape[1]))
         return torch.from_numpy(im)
     
-    def __init__(self, data_path=TRAIN_DATA_PATH, labels_path=TRAIN_LABELS_PATH,
-                 num_examples=1000):
+    def __init__(self, data_path, labels_path, num_examples=1000):
         self.labels_df = pd.read_csv(labels_path)
         assert num_examples <= self.labels_df.shape[0]
         self.num_examples = num_examples
@@ -65,8 +63,7 @@ class DynamicDataset(Dataset):
         rand_seed (None/int): if None, go sequentially. If <0, use system clock for seed. If >0, use seed value
     """
 
-    def __init__(self, data_path=TRAIN_DATA_PATH, labels_path=TRAIN_LABELS_PATH,
-                 num_examples=1000, buffer_size=1000, rand_seed = None):
+    def __init__(self, data_path, labels_path, num_examples=1000, buffer_size=1000, rand_seed = None):
         self.labels_df = pd.read_csv(labels_path)
         assert num_examples <= self.labels_df.shape[0]
         assert num_examples >= buffer_size
@@ -126,8 +123,7 @@ class DynamicDataset(Dataset):
 #Since dataloaders are created in conjunction with samplers, and because of our RAM constraint when loading data,
 #We needed to create this helper function to produce a dataloader object with the appropraite sampler. Without this helper
 #function, there is a risk that the Sampler would not be able to sample random pictures properly
-def createFastLoaderWithSampler(data_path=TRAIN_DATA_PATH, labels_path=TRAIN_LABELS_PATH,
-                                                        num_examples=1000, buffer_size=1000, 
+def createFastLoaderWithSampler(data_path, labels_path, num_examples=1000, buffer_size=1000, 
                                                         rand_seed = None, batch_size=100, num_workers=8):
 
     dynamic_dataset = DynamicDataset(data_path, labels_path, num_examples, buffer_size, rand_seed)
