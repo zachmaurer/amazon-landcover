@@ -31,36 +31,36 @@ def plot_results(results_dict, config = None, display = False):
     val_all_or_none = results_dict['val_all_or_none']
     val_global_recall = results_dict['val_global_recall']
     
-    plt.subplot(2, 2, 1)
+    plt.subplot(4, 1, 1)
     plt.title('Training loss')
     plt.plot(loss_history, 'o')
     plt.xlabel('Iteration #')
 
-    plt.subplot(2, 2, 2)
+    plt.subplot(4, 1, 2)
     plt.title('F2 Score')
     plt.plot(train_f2, '-o', label='train')
     plt.plot(val_f2, '-o', label='val')
     plt.plot([0.82] * len(val_f2), 'k--')
-    plt.xlabel('Iteration #')
+    plt.xlabel('Epoch')
     plt.legend(loc='lower right')
 
-    plt.subplot(2, 2, 3)
+    plt.subplot(4, 1, 3)
     plt.title('Exact Match')
     plt.plot(train_all_or_none, '-o', label='train')
     plt.plot(val_all_or_none, '-o', label='val')
     plt.plot([0.82] * len(val_all_or_none), 'k--')
-    plt.xlabel('Iteration #')
+    plt.xlabel('Epoch')
     plt.legend(loc='lower right')
 
-    plt.subplot(2, 2, 4)
+    plt.subplot(4, 1, 4)
     plt.title('Global Recall')
     plt.plot(train_global_recall, '-o', label='train')
     plt.plot(val_global_recall, '-o', label='val')
     plt.plot([0.82] * len(val_global_recall), 'k--')
-    plt.xlabel('Iteration #')
+    plt.xlabel('Epoch')
     
     plt.legend(loc='lower right')
-    plt.gcf().set_size_inches(25, 50)
+    plt.gcf().set_size_inches(12, 20)
     plt.subplots_adjust(hspace = 0.4)
 
     if display:

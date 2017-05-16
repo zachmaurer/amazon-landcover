@@ -133,30 +133,35 @@ def train(model, config, loss_fn = None, optimizer = None):
             # Evaluate on train and val sets
             if config.eval_every and (t + 1) % config.eval_every == 0:
                 if config.train_loader:
-                    train_f2_history.append(f2_score(model, config, config.train_loader, "train"))
-                    train_all_or_none_acc_history.append(check_all_or_none_accuracy(model, config, config.train_loader, "train"))
-                    train_global_recall_history.append(check_global_recall(model, config, config.train_loader, "train"))
+                    f2_score(model, config, config.train_loader, "train")
+                    check_all_or_none_accuracy(model, config, config.train_loader, "train")
+                    check_global_recall(model, config, config.train_loader, "train")
                 if config.val_loader:
-                    val_f2_history.append(f2_score(model, config, config.val_loader, "val"))
-                    val_all_or_none_acc_history.append(check_all_or_none_accuracy(model, config, config.val_loader, "val"))
-                    val_global_recall_history.append(check_global_recall(model, config, config.val_loader, "val"))
+                    f2_score(model, config, config.val_loader, "val")
+                    check_all_or_none_accuracy(model, config, config.val_loader, "val")
+                    check_global_recall(model, config, config.val_loader, "val")
                              
             # Backprop
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             gc.collect()
+
+        config.log("Finished Epoch {}/{}".format(epoch + 1, config.epochs))
+        config.log("Evaluating...")
+        if config.train_loader:
+            train_f2_history.append(f2_score(model, config, config.train_loader, "train"))
+            train_all_or_none_acc_history.append(check_all_or_none_accuracy(model, config, config.train_loader, "train"))
+            train_global_recall_history.append(check_global_recall(model, config, config.train_loader, "train"))
+        if config.val_loader:
+            val_f2_history.append(f2_score(model, config, config.val_loader, "val"))
+            val_all_or_none_acc_history.append(check_all_or_none_accuracy(model, config, config.val_loader, "val"))
+            val_global_recall_history.append(check_global_recall(model, config, config.val_loader, "val"))
+        config.log("Done.\n")
         gc.collect()
 
-    # Final Evaluation
-    if config.train_loader:
-        train_f2_history.append(f2_score(model, config, config.train_loader, "train"))
-        train_all_or_none_acc_history.append(check_all_or_none_accuracy(model, config, config.train_loader, "train"))
-        train_global_recall_history.append(check_global_recall(model, config, config.train_loader, "train"))
-    if config.val_loader:
-        val_f2_history.append(f2_score(model, config, config.val_loader, "val"))
-        val_all_or_none_acc_history.append(check_all_or_none_accuracy(model, config, config.val_loader, "val"))
-        val_global_recall_history.append(check_global_recall(model, config, config.val_loader, "val"))
+    print("\nFinished training.")
+   
     results_dict = {
         'train_loss': loss_history,
         'train_f2': train_f2_history,

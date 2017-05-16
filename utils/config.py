@@ -52,18 +52,18 @@ class Config:
 
   def _testSettings(self):
     # Test Settings
-    self.epochs = 5
-    self.batch_size = 10
-    self.num_train = 100
-    self.num_val = 100
+    self.epochs = 2
+    self.batch_size = 5
+    self.num_train = 10
+    self.num_val = 10
     self.lr = 1e-3
-    self.print_every = 5
-    self.eval_every = 50
+    self.print_every = 1
+    self.eval_every = None
 
 
   def __str__(self):
     config_str = "Config for experiment:   {}".format(self.experiment_id)
-    config_str += "\nUsing gpu?   {}".format(self.use_gpu)
+    config_str += "\n\tgpu: {}".format(self.use_gpu)
     config_str += "\n\tepochs: {}".format(self.epochs)
     config_str += "\n\tbatch_size: {}".format(self.batch_size)
     config_str += "\n\tlearning_rate: {}".format(self.lr)
@@ -73,6 +73,7 @@ class Config:
     config_str += "\n\tsave_dest: {}".format(self.save_dest)
     config_str += "\n\tprint_every: {}".format(self.print_every)
     config_str += "\n\teval_every: {}".format(self.eval_every)
+    config_str += "\n"
     return config_str
 
   def _createSubfolders(self):

@@ -4,36 +4,33 @@ from torch.utils.data import DataLoader
 from utils import train
 from utils import NaiveDataset
 from utils import Config, parseConfig
-from utils.layers import Flatten
+from utils.layers import Flatten, countParams
 from utils.constants import NUM_CLASSES, TRAIN_DATA_PATH, TRAIN_LABELS_PATH
 from utils import visualize
 
 def createModel(config):
     model = nn.Sequential(
                       # Conv_Relu_BatchNorm --> 32 x 32
-                      nn.Conv2d(3, 32, kernel_size = 3, stride = 1, padding = 2),
+                      nn.Conv2d(3, 32, kernel_size = 7, stride = 1, padding = 2),
                       nn.ReLU(inplace=True),
                       nn.BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True),
+                      nn.MaxPool2d(4, stride=2),
       
                       # Conv_Relu_BatchNorm_Maxpool --> 32 x 14 x 14
-                      nn.Conv2d(32, 32, kernel_size=7, stride=1),
+                      nn.Conv2d(32, 32, kernel_size=3, stride=1, padding = 2),
                       nn.ReLU(inplace=True),
                       nn.BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True),
                       nn.MaxPool2d(2, stride=2),
       
                       # Aggregation Layers
                       Flatten(), # see above for explanation
-                      nn.Linear(508032, 2048), # affine layer
-                      nn.ReLU(inplace=True),
-                      nn.BatchNorm1d(2048, affine = True),
-                      nn.Dropout(p=0.55, inplace = True),
-                      nn.Linear(2048, 512), # affine layer
-                      nn.ReLU(inplace=True),
-                      nn.BatchNorm1d(512, affine = True),
-                      nn.Dropout(p=0.3, inplace = True),
-                      nn.Linear(512, NUM_CLASSES),
+                      nn.Linear(131072, 2048), # affine layer
+                      nn.ReLU(inplace = False),
+                      nn.Dropout(p=0.55, inplace = False),
+                      nn.Linear(2048, NUM_CLASSES), # affine layer
             )
     model = model.type(config.dtype)
+    
     return model 
 
 
@@ -50,6 +47,7 @@ def main():
 
     # Create Model
     model = createModel(config)
+    countParams(model, config)
 
     # Train and Eval Model
     results = train(model, config)
