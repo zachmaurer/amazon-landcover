@@ -109,8 +109,8 @@ def train(model, config, loss_fn = None, optimizer = None):
     val_f2_history = []
     train_all_or_none_acc_history = [] # per epoch
     val_all_or_none_acc_history = [] # per epoch
-    train_per_class_acc_history = []
-    val_per_class_acc_history = []
+    train_per_class_acc_history = [] # TODO
+    val_per_class_acc_history = []  # TODO
     train_global_recall_history = []
     val_global_recall_history = []
 
@@ -146,6 +146,7 @@ def train(model, config, loss_fn = None, optimizer = None):
             loss.backward()
             optimizer.step()
             gc.collect()
+        gc.collect()
 
     # Final Evaluation
     if config.train_loader:

@@ -22,8 +22,8 @@ class Config:
       self.lr = args.lr if args else None
       self.print_every = args.pf if args else None
       self.eval_every = args.ef if args else None
-      # GPU Settings
-    
+      assert(self.batch_size > 1)
+    # GPU Settings
     self.use_gpu = args.gpu if args else None
     self.dtype = cuda.FloatTensor if self.use_gpu else FloatTensor
     if self.use_gpu: assert(cuda.is_available())
@@ -103,8 +103,8 @@ def parseConfig(description="Default Model Description"):
   parser.add_argument('--nv', type=int, help='number of validation examples', default = None)
   parser.add_argument('--lr', type=float, help='learning rate', default = 1e-3)
   parser.add_argument('--gpu', action='store_true', help='use gpu', default = False)
-  parser.add_argument('--pf', type=int, help='print frequency', default = None)
-  parser.add_argument('--ef', type=int, help='eval frequency', default = None)
+  parser.add_argument('--pe', type=int, help='print frequency', default = None)
+  parser.add_argument('--ee', type=int, help='eval frequency', default = None)
   parser.add_argument('--title', help='experiment title', default = None)
   parser.add_argument('--path', help='save path for results, logs, checkpoints', default = "./experiments")
   args = parser.parse_args()
