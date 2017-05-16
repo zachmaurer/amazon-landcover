@@ -20,8 +20,8 @@ class Config:
       self.num_train = args.nt if args else None
       self.num_val = args.nv if args else None
       self.lr = args.lr if args else None
-      self.print_every = args.pf if args else None
-      self.eval_every = args.ef if args else None
+      self.print_every = args.pe if args else None
+      self.eval_every = args.ee if args else None
       assert(self.batch_size > 1)
     # GPU Settings
     self.use_gpu = args.gpu if args else None
