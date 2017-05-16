@@ -1,6 +1,8 @@
 .DS_Store
+*.zip
 *.pyc 
 input/*
 .env/*
 credentials
 experiments/*
+__pycache__/*

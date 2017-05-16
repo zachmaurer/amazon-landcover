@@ -3,16 +3,10 @@
 import torch
 from torch.utils.data.dataset import Dataset
 from torch.utils.data.sampler import SequentialSampler
-from torchvision import transforms
 from sklearn.preprocessing import MultiLabelBinarizer
 import pandas as pd
 import numpy as np
 from PIL import Image
-
-#some constant paths. Move this to a global config later
-train_data_path = './input/train-jpg/'
-test_data_path = './input/test-jpg/'
-train_labels_path ='./input/train_v2.csv' 
 
 
 #this is the naive implementation which pulls from file every time you get an item. no caching. Probably not useful anymore
@@ -34,8 +28,7 @@ class NaiveDataset(Dataset):
         im = np.reshape(im,(im.shape[2],im.shape[0],im.shape[1]))
         return torch.from_numpy(im)
     
-    def __init__(self, data_path=train_data_path, labels_path=train_labels_path,
-                 num_examples=1000):
+    def __init__(self, data_path, labels_path, num_examples=1000):
         self.labels_df = pd.read_csv(labels_path)
         assert num_examples <= self.labels_df.shape[0]
         self.num_examples = num_examples
@@ -70,8 +63,7 @@ class DynamicDataset(Dataset):
         rand_seed (None/int): if None, go sequentially. If <0, use system clock for seed. If >0, use seed value
     """
 
-    def __init__(self, data_path=train_data_path, labels_path=train_labels_path,
-                 num_examples=1000, buffer_size=1000, rand_seed = None):
+    def __init__(self, data_path, labels_path, num_examples=1000, buffer_size=1000, rand_seed = None):
         self.labels_df = pd.read_csv(labels_path)
         assert num_examples <= self.labels_df.shape[0]
         assert num_examples >= buffer_size
@@ -121,7 +113,7 @@ class DynamicDataset(Dataset):
     def __getitem__(self, index):
         if index>int((2*self.buffer_index+1)*self.buffer_size/2):
             self.fill_buffer(0,int(self.buffer_size/2))
-        elif index>self_buffer_index*self.buffer_size:
+        elif index>self.buffer_index*self.buffer_size:
             self.fill_buffer(int(self.buffer_size/2),self.buffer_size)
         return self.data_tensor[index%self.buffer_size], self.labels_tensor[index%self.buffer_size]
         
@@ -131,10 +123,10 @@ class DynamicDataset(Dataset):
 #Since dataloaders are created in conjunction with samplers, and because of our RAM constraint when loading data,
 #We needed to create this helper function to produce a dataloader object with the appropraite sampler. Without this helper
 #function, there is a risk that the Sampler would not be able to sample random pictures properly
-def createFastLoaderWithSampler(data_path=train_data_path, labels_path=train_labels_path,
-                 num_examples=1000, buffer_size=1000, rand_seed = None, batch_size=100, num_workers=8):
-    dynamic_dataset = DynamicDataset(data_path, labels_path,
-                 num_examples, buffer_size, rand_seed)
+def createFastLoaderWithSampler(data_path, labels_path, num_examples=1000, buffer_size=1000, 
+                                                        rand_seed = None, batch_size=100, num_workers=8):
+
+    dynamic_dataset = DynamicDataset(data_path, labels_path, num_examples, buffer_size, rand_seed)
     return torch.utils.data.DataLoader(dynamic_dataset, batch_size=100, 
                                        shuffle=(rand_seed is not None), sampler=SequentialSampler(dynamic_dataset),
                                        num_workers=num_workers)
