@@ -10,19 +10,25 @@ import argparse
 # TODO
 #
 class Config:
-  def __init__(self, args = None, test = False): 
-    if test or (args and args.test):
+  def __init__(self, args): 
+    if args.test:
       self._testSettings()   
     else:
       # Model and Experiment Settings
-      self.epochs = args.e if args else None
-      self.batch_size = args.bs if args else None
-      self.num_train = args.nt if args else None
-      self.num_val = args.nv if args else None
-      self.lr = args.lr if args else None
-      self.print_every = args.pe if args else None
-      self.eval_every = args.ee if args else None
-      assert(self.batch_size > 1)
+      self.epochs = args.e if args.e else None
+      self.batch_size = args.bs if args.bs else None
+      self.num_train = args.nt if args.nt else None
+      self.num_val = args.nv if args.nv else None
+      self.lr = args.lr if args.lr else None
+      self.print_every = args.pe if args.pe else None
+      self.eval_every = args.ee if args.ee else None
+    self.checkpoint = args.checkpoint if args.checkpoint else None
+    self.save_every = args.save_every if args.save_every else None
+    self.predict = args.predict if args.predict else None
+
+    if self.predict:
+      assert(self.checkpoint)
+    assert(self.batch_size > 1)
     # GPU Settings
     self.use_gpu = args.gpu if args else None
     self.dtype = cuda.FloatTensor if self.use_gpu else FloatTensor
@@ -108,6 +114,9 @@ def parseConfig(description="Default Model Description"):
   parser.add_argument('--ee', type=int, help='eval frequency', default = None)
   parser.add_argument('--title', help='experiment title', default = None)
   parser.add_argument('--path', help='save path for results, logs, checkpoints', default = "./experiments")
+  parser.add_argument('--checkpoint', action='store', help='resume from an exisiting model', type=str, default = None)
+  parser.add_argument('--predict', action='store_true', help='predict only, no training', default = False)
+  parser.add_argument('--save_every', action='store_true', help='save checkpoint after every epoch', default = False)
   args = parser.parse_args()
   return args
 
