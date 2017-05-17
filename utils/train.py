@@ -63,7 +63,7 @@ def check_all_or_none_accuracy(model, config, loader, label = ""):
         # sigmoid 
 
         preds = scores > 0.5
-        num_correct += np.sum([1 for i in range(preds.shape[0]) if np.array_equal(preds[i], y[i])])
+        num_correct += np.sum([1 for i in range(preds.shape[0]) if np.array_equal(preds[i], y.numpy()[i])])
         num_samples += preds.shape[0]
     acc = float(num_correct) / num_samples
     config.log('All or none acc {%s} : Got %d / %d correct (%.2f)' % (label, num_correct, num_samples, 100 * acc))
