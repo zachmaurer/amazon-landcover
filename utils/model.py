@@ -20,7 +20,7 @@ def checkpointModel(model, config, optimizer, epoch, stats, is_best):
     config.log("Saving checkpoint...{}".format(file))
     torch.save(checkpoint, filename)
     if is_best:
-      config.log("New best model: {} with Train F2:  {}".format(file, stats['train_f2'])) #TODO: change to val
+      config.log("New best model: {} with Val F2:  {}".format(file, stats['val_f2']))
       shutil.copyfile(filename, os.path.join(config.checkpoint_dest, BEST_MODEL_FILENAME))
       config.log("Done saving checkpoint.")
 

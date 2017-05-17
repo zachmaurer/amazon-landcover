@@ -7,6 +7,29 @@ from sklearn.preprocessing import MultiLabelBinarizer
 import pandas as pd
 import numpy as np
 from PIL import Image
+import random
+
+
+def splitIndices(dataset, config, shuffle = True):
+    random.seed(config.seed)
+    length = len(dataset)
+    assert(length > config.num_train)
+    indices = list(range(0, length))  
+    if shuffle:  
+        random.shuffle(indices)
+    if config.num_val:
+        num_val = config.num_val
+        val = indices[0:num_val]    
+        train = indices[num_val:config.num_train + num_val]
+    else:
+        num_val = length - config.num_train
+        val = indices[0:num_val]    
+        train = indices[num_val:]
+    return train, val
+
+
+
+
 
 
 #this is the naive implementation which pulls from file every time you get an item. no caching. Probably not useful anymore
@@ -28,7 +51,7 @@ class NaiveDataset(Dataset):
         im = np.reshape(im,(im.shape[2],im.shape[0],im.shape[1]))
         return torch.from_numpy(im)
     
-    def __init__(self, data_path, labels_path, num_examples=1000):
+    def __init__(self, data_path, labels_path, num_examples):
         self.labels_df = pd.read_csv(labels_path)
         assert num_examples <= self.labels_df.shape[0]
         self.num_examples = num_examples

@@ -7,9 +7,8 @@ IMG_W = None
 IMG_H = None
 
 TRAIN_DATA_PATH = "./input/train-jpg/"
-TRAIN_LABELS_PATH = "./input/train.csv"
-#TRAIN_LABELS_PATH = "./input/train_v2.csv"
 TEST_DATA_PATH = './input/test-jpg/'
+TRAIN_LABELS_PATH = "./input/train_v2.csv"
 
 
 BEST_MODEL_FILENAME = 'best_model.ckpt'
