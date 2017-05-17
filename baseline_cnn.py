@@ -1,10 +1,10 @@
 from torch import nn
 from torch.utils.data import DataLoader
 
-from utils import train
+from utils import train, predict
 from utils import NaiveDataset
 from utils import Config, parseConfig
-from utils.layers import Flatten, countParams
+from utils.layers import Flatten
 from utils.constants import NUM_CLASSES, TRAIN_DATA_PATH, TRAIN_LABELS_PATH
 from utils import visualize
 
@@ -30,7 +30,6 @@ def createModel(config):
                       nn.Linear(2048, NUM_CLASSES), # affine layer
             )
     model = model.type(config.dtype)
-    
     return model 
 
 
@@ -47,11 +46,12 @@ def main():
 
     # Create Model
     model = createModel(config)
-    countParams(model, config)
 
     # Train and Eval Model
     results = train(model, config)
     visualize.plot_results(results, config)
+
+    predict(model, config) # TODO, see train.py
     
 
 if __name__ == '__main__':

@@ -20,6 +20,8 @@ import os
 # 
 
 def plot_results(results_dict, config = None, display = False):
+    if config.predict:
+        return
     #results_dict has keys train_loss, train_acc, val_acc for lists of value vs iteration number
     loss_history = results_dict['train_loss']
 

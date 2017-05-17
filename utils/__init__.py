@@ -4,3 +4,4 @@ from . import visualize
 from .train import train
 from . import layers
 from . import constants
+from . import model

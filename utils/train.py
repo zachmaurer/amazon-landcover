@@ -5,6 +5,15 @@ import gc
 from scipy.special import expit
 from sklearn.metrics import fbeta_score
 import numpy as np
+from .model import loadModel, countParams, checkpointModel
+
+
+
+def predict(model, config):
+    #TODO
+    pass
+
+
 
 
 
@@ -17,7 +26,6 @@ import numpy as np
 #   model: the model object
 #   loader: DataLoader in pytorch
 #  
-
 def f2_score(model, config, loader, label=""):
     sum_f2 = 0.0 
     model.eval()
@@ -89,6 +97,9 @@ def check_per_class_accuracy(model, config, loader, label = ""):
     model.train()
     return acc
 
+###############
+###############
+###############
 # Function: train
 # 
 # Evaluates the model on a dataset
@@ -104,20 +115,29 @@ def train(model, config, loss_fn = None, optimizer = None):
     if not optimizer:
         optimizer = optim.Adam(model.parameters(), lr = config.lr) 
 
+    best_f2 = 0.0
     loss_history = [] # per iteration
     train_f2_history = []
     val_f2_history = []
     train_all_or_none_acc_history = [] # per epoch
     val_all_or_none_acc_history = [] # per epoch
-    train_per_class_acc_history = [] # TODO
-    val_per_class_acc_history = []  # TODO
+    # train_per_class_acc_history = [] # TODO
+    # val_per_class_acc_history = []  # TODO
     train_global_recall_history = []
     val_global_recall_history = []
 
-    
+    if config.checkpoint:
+        loadModel(model, config, optimizer)
+        if config.predict:
+            config.log("Skipping training. Predicting only.")
+            return None
+        
+
+    countParams(model, config)
+
     model.train()
     for epoch in range(config.epochs):
-        config.log('Starting epoch %d / %d' % (epoch + 1, config.epochs))
+        config.log('\nStarting epoch %d / %d' % (epoch + 1, config.epochs))
         for t, (x, y) in enumerate(config.train_loader):
             # Train
             x_var = Variable(x.type(config.dtype))
@@ -157,7 +177,24 @@ def train(model, config, loss_fn = None, optimizer = None):
             val_f2_history.append(f2_score(model, config, config.val_loader, "val"))
             val_all_or_none_acc_history.append(check_all_or_none_accuracy(model, config, config.val_loader, "val"))
             val_global_recall_history.append(check_global_recall(model, config, config.val_loader, "val"))
-        config.log("Done.\n")
+
+        # TODO change this to val_f2_history
+        if train_f2_history[-1] > best_f2:
+            best_f2 = train_f2_history[-1]
+            is_best = True
+
+        if config.save_every or is_best:
+            stats = {
+                'loss': loss_history[-1],
+                'train_f2': train_f2_history[-1],
+                'train_acc': train_all_or_none_acc_history[-1],
+                'train_recall': train_global_recall_history[-1],
+            }
+            if config.val_loader:
+                stats['val_f2'] = val_f2_history[-1],
+                stats['val_acc'] = val_all_or_none_acc_history[-1]
+                stats['val_recall'] = val_global_recall_history[-1]
+            checkpointModel(model, config, optimizer, epoch, stats, is_best)
         gc.collect()
 
     print("\nFinished training.")
