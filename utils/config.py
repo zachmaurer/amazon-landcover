@@ -25,6 +25,7 @@ class Config:
     self.checkpoint = args.checkpoint if args.checkpoint else None
     self.save_every = args.save_every if args.save_every else None
     self.predict = args.predict if args.predict else None
+    self.seed = args.seed if args.seed else None
 
     if self.predict:
       assert(self.checkpoint)
@@ -112,6 +113,7 @@ def parseConfig(description="Default Model Description"):
   parser.add_argument('--gpu', action='store_true', help='use gpu', default = False)
   parser.add_argument('--pe', type=int, help='print frequency', default = None)
   parser.add_argument('--ee', type=int, help='eval frequency', default = None)
+  parser.add_argument('--seed', type=int, help='random seed', default = 231)
   parser.add_argument('--title', help='experiment title', default = None)
   parser.add_argument('--path', help='save path for results, logs, checkpoints', default = "./experiments")
   parser.add_argument('--checkpoint', action='store', help='resume from an exisiting model', type=str, default = None)

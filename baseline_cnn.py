@@ -1,11 +1,12 @@
 from torch import nn
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader 
+from torch.utils.data.sampler import SubsetRandomSampler
 
 from utils import train, predict
-from utils import NaiveDataset
+from utils import NaiveDataset, splitIndices
 from utils import Config, parseConfig
 from utils.layers import Flatten
-from utils.constants import NUM_CLASSES, TRAIN_DATA_PATH, TRAIN_LABELS_PATH
+from utils.constants import NUM_CLASSES, TRAIN_DATA_PATH, TRAIN_LABELS_PATH, NUM_TRAIN
 from utils import visualize
 
 def createModel(config):
@@ -39,10 +40,17 @@ def main():
     config = Config(args)
     config.log(config)
 
-    # Load Data
-    train_dataset = NaiveDataset(TRAIN_DATA_PATH, TRAIN_LABELS_PATH, num_examples = config.num_train)
-    train_loader = DataLoader(train_dataset, batch_size = config.batch_size, num_workers = 4)
+    train_dataset = NaiveDataset(TRAIN_DATA_PATH, TRAIN_LABELS_PATH, num_examples = NUM_TRAIN)
+    train_idx, val_idx = splitIndices(train_dataset, config, shuffle = True)
+
+    train_sampler = SubsetRandomSampler(train_idx)
+    val_sampler = SubsetRandomSampler(val_idx)
+
+    train_loader = DataLoader(train_dataset, batch_size = config.batch_size, num_workers = 4, sampler = train_sampler)
+    val_loader = DataLoader(train_dataset, batch_size = config.batch_size, num_workers = 1, sampler = val_sampler)
+    
     config.train_loader = train_loader
+    config.val_loader = val_loader
 
     # Create Model
     model = createModel(config)
