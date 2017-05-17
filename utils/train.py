@@ -33,10 +33,10 @@ def f2_score(model, config, loader, label=""):
     for x, y in loader:
         x_var = Variable(x.type(config.dtype), volatile=True)
         scores = model(x_var)
-        scores = expit(scores.data.numpy())
+        scores = expit(scores.data.cpu().numpy())
         # multiply by num examples to get sum, not average
-        sum_f2 += fbeta_score(scores > 0.5, y.numpy(), beta=2, average='samples')*y.size(0)
-        num_samples += y.numpy().shape[0]
+        sum_f2 += fbeta_score(scores > 0.5, y.cpu().numpy(), beta=2, average='samples')*y.size(0)
+        num_samples += y.cpu().numpy().shape[0]
     f2_score = float(sum_f2)/num_samples
     config.log('F2 score {%s} : Got %.2f' % (label, 100.0 * f2_score))
     model.train()
@@ -49,11 +49,11 @@ def check_global_recall(model, config, loader, label = ""):
     for x, y in loader:
         x_var = Variable(x.type(config.dtype), volatile=True)
         scores = model(x_var)
-        scores = expit(scores.data.numpy())
+        scores = expit(scores.data.cpu().numpy())
         # sigmoid 
 
         preds = scores > 0.5
-        num_correct += (preds == y.numpy()).sum()
+        num_correct += (preds == y.cpu().numpy()).sum()
         num_samples += preds.shape[0]*17
     acc = float(num_correct) / num_samples
     config.log('Global recall {%s} : Got %d / %d correct (%.2f)' % (label, num_correct, num_samples, 100.0 * acc))
@@ -67,11 +67,11 @@ def check_all_or_none_accuracy(model, config, loader, label = ""):
     for x, y in loader:
         x_var = Variable(x.type(config.dtype), volatile=True)
         scores = model(x_var)
-        scores = expit(scores.data.numpy())
+        scores = expit(scores.data.cpu().numpy())
         # sigmoid 
 
         preds = scores > 0.5
-        num_correct += np.sum([1 for i in range(preds.shape[0]) if np.array_equal(preds[i], y.numpy()[i])])
+        num_correct += np.sum([1 for i in range(preds.shape[0]) if np.array_equal(preds[i], y.cpu().numpy()[i])])
         num_samples += preds.shape[0]
     acc = float(num_correct) / num_samples
     config.log('All or none acc {%s} : Got %d / %d correct (%.2f)' % (label, num_correct, num_samples, 100 * acc))
@@ -85,11 +85,11 @@ def check_per_class_accuracy(model, config, loader, label = ""):
     for x, y in loader:
         x_var = Variable(x.type(config.dtype), volatile=True)
         scores = model(x_var)
-        scores = expit(scores.data.numpy())
+        scores = expit(scores.data.cpu().numpy())
         # sigmoid 
 
         preds = scores > 0.5
-        num_correct += (preds == y.numpy()).sum(axis=0)
+        num_correct += (preds == y.cpu().numpy()).sum(axis=0)
         num_samples += preds.shape[0]
     acc = num_correct / num_samples
     # TODO: Not printing this right now because it would print 17 scores at every step.
