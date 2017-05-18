@@ -190,10 +190,11 @@ def train(model, config, loss_fn = None, optimizer = None):
                 'train_recall': train_global_recall_history[-1],
             }
             if config.val_loader:
-                stats['val_f2'] = val_f2_history[-1],
+                stats['val_f2'] = val_f2_history[-1]
                 stats['val_acc'] = val_all_or_none_acc_history[-1]
                 stats['val_recall'] = val_global_recall_history[-1]
-            checkpointModel(model, config, optimizer, epoch, stats, is_best)
+            if not config.no_save:
+                checkpointModel(model, config, optimizer, epoch, stats, is_best)
         gc.collect()
 
     print("\nFinished training.")

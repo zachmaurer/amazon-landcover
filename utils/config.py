@@ -24,6 +24,7 @@ class Config:
       self.eval_every = args.ee if args.ee else None
     self.checkpoint = args.checkpoint if args.checkpoint else None
     self.save_every = args.save_every if args.save_every else None
+    self.no_save = args.no_save if args.no_save else None
     self.predict = args.predict if args.predict else None
     self.seed = args.seed if args.seed else None
 
@@ -119,6 +120,7 @@ def parseConfig(description="Default Model Description"):
   parser.add_argument('--checkpoint', action='store', help='resume from an exisiting model', type=str, default = None)
   parser.add_argument('--predict', action='store_true', help='predict only, no training', default = False)
   parser.add_argument('--save_every', action='store_true', help='save checkpoint after every epoch', default = False)
+  parser.add_argument('--no_save', action='store_true', help='save checkpoint after every epoch', default = False)
   args = parser.parse_args()
   return args
 
