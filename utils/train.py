@@ -178,7 +178,7 @@ def train(model, config, loss_fn = None, optimizer = None):
             val_all_or_none_acc_history.append(check_all_or_none_accuracy(model, config, config.val_loader, "val"))
             val_global_recall_history.append(check_global_recall(model, config, config.val_loader, "val"))
 
-        if val_f2_history[-1] > best_f2:
+        if float(val_f2_history[-1]) > float(best_f2):
             best_f2 = val_f2_history[-1]
             is_best = True
 
