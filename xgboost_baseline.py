@@ -140,7 +140,7 @@ print('Training and making predictions')
 for class_i in tqdm(range(n_classes), miniters=1): 
 #     print('Analysing class ' + str(class_i))
     model = xgb.XGBClassifier(max_depth=5, learning_rate=0.1, n_estimators=100, \
-                              silent=True, objective='binary:logistic', nthread=-1, \
+                              silent=True, objective='binary:logistic', nthread=8, \
                               gamma=0, min_child_weight=1, max_delta_step=0, \
                               subsample=1, colsample_bytree=1, colsample_bylevel=1, \
                               reg_alpha=0, reg_lambda=1, scale_pos_weight=1, \
