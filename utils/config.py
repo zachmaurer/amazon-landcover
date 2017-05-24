@@ -61,9 +61,9 @@ class Config:
   def _testSettings(self):
     # Test Settings
     self.epochs = 2
-    self.batch_size = 5
-    self.num_train = 10
-    self.num_val = 10
+    self.batch_size = 2
+    self.num_train = 2
+    self.num_val = 2
     self.lr = 1e-3
     self.print_every = 1
     self.eval_every = None

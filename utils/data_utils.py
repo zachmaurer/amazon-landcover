@@ -92,7 +92,10 @@ class DynamicDataset(Dataset):
     """
 
     def __init__(self, data_path, labels_path, num_examples=1000, buffer_size=1000, rand_seed = None):
-        self.labels_df = pd.read_csv(labels_path)
+        if labels_path:
+            self.labels_df = pd.read_csv(labels_path)
+        else:
+            self.labels_df = None
         assert num_examples <= self.labels_df.shape[0]
         assert num_examples >= buffer_size
         assert num_examples % buffer_size == 0

@@ -96,10 +96,10 @@ class UNet(nn.Module):
     self.filter_seq = [128, 256, 512, 1024]
 
     self.conv1 = UNetConvModule(3, self.filter_seq[0])
-    self.pc1 = UNetPoolCropModule(crop_size = None)
+    self.pc1 = UNetPoolCropModule(crop_size = None) # 128
 
     self.conv2 = UNetConvModule(self.filter_seq[0], self.filter_seq[1])
-    self.pc2 = UNetPoolCropModule(crop_size = None)
+    self.pc2 = UNetPoolCropModule(crop_size = None) # 64
 
     self.conv3 = UNetConvModule(self.filter_seq[1], self.filter_seq[2])
     self.pc3 = UNetPoolCropModule(crop_size = None)
@@ -157,19 +157,21 @@ def main():
     config.val_loader = val_loader
 
     # Create Model
-    model = UNet().cuda()
+    model = UNet()
+    if config.use_gpu:
+      model = model.cuda()
 
     # Train and Eval Model
     results = train(model, config)
     visualize.plot_results(results, config)
   
     # Evaluate Results
-    test_dataset = NaiveDataset(TEST_DATA_PATH, TEST_LABELS_PATH)
+    test_dataset = NaiveDataset(TEST_DATA_PATH, None)
     test_loader = DataLoader(test_dataset, batch_size = 250, shuffle = False, num_workers = 3)
 
-    predict(model, config, test_loader, dataset = "test")
+    #predict(model, config, test_loader, dataset = "test")
     predict(model, config, train_loader, dataset = "train")
-    predict(model, config, val_loader, dataset = "val")
+    #predict(model, config, val_loader, dataset = "val")
 
 if __name__ == '__main__':
     # model = UNet()
