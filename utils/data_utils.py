@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 from PIL import Image
 import random
+from utils.constants import LABEL_LIST
 
 
 def splitIndices(dataset, config, shuffle = True):
@@ -51,14 +52,18 @@ class NaiveDataset(Dataset):
         im = np.reshape(im,(im.shape[2],im.shape[0],im.shape[1]))
         return torch.from_numpy(im)
     
-    def __init__(self, data_path, labels_path, num_examples):
+    def __init__(self, data_path, labels_path, num_examples=None):
         self.labels_df = pd.read_csv(labels_path)
-        assert num_examples <= self.labels_df.shape[0]
-        self.num_examples = num_examples
+        if num_examples is None:
+            self.num_examples = self.labels_df.shape[0]
+            print(self.num_examples)
+        else:
+            assert num_examples <= self.labels_df.shape[0]
+            self.num_examples = num_examples
         
-        mlb = MultiLabelBinarizer()
+        self.mlb = MultiLabelBinarizer(classes = LABEL_LIST)
         labels_words = [set([word for word in row.split()]) for row in self.labels_df['tags']]
-        self.labels_tensor = torch.from_numpy(mlb.fit_transform(labels_words))
+        self.labels_tensor = torch.from_numpy(self.mlb.fit_transform(labels_words))
         
         self.data_path = data_path
 

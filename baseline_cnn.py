@@ -6,7 +6,7 @@ from utils import train, predict
 from utils import NaiveDataset, splitIndices
 from utils import Config, parseConfig
 from utils.layers import Flatten
-from utils.constants import NUM_CLASSES, TRAIN_DATA_PATH, TRAIN_LABELS_PATH, NUM_TRAIN
+from utils.constants import NUM_CLASSES, TRAIN_DATA_PATH, TRAIN_LABELS_PATH, NUM_TRAIN, TEST_DATA_PATH, TEST_LABELS_PATH
 from utils import visualize
 
 def createModel(config):
@@ -51,7 +51,13 @@ def main():
     
     config.train_loader = train_loader
     config.val_loader = val_loader
-
+    
+    #get test data
+    print("get test data")
+    test_dataset = NaiveDataset(TEST_DATA_PATH, TEST_LABELS_PATH)
+    test_loader = DataLoader(test_dataset, batch_size = 250, shuffle = False, num_workers = 8)
+    print("got test data")
+    
     # Create Model
     model = createModel(config)
 
@@ -59,7 +65,7 @@ def main():
     results = train(model, config)
     visualize.plot_results(results, config)
 
-    predict(model, config) # TODO, see train.py
+    predict(model, config, test_loader) # TODO, see train.py
     
 
 if __name__ == '__main__':

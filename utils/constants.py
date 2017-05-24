@@ -9,6 +9,7 @@ IMG_H = None
 TRAIN_DATA_PATH = "./input/train-jpg/"
 TEST_DATA_PATH = './input/test-jpg/'
 TRAIN_LABELS_PATH = "./input/train_v2.csv"
+TEST_LABELS_PATH = "./input/sample_submission.csv"
 
 
 BEST_MODEL_FILENAME = 'best_model.ckpt'
@@ -33,3 +34,21 @@ LABEL_MAP = {
         15: 'slash_burn',
         16: 'water'
     }
+
+LABEL_LIST = ['agriculture',
+        'artisinal_mine',
+        'bare_ground',
+        'blooming',
+        'blow_down',
+        'clear',
+        'cloudy',
+        'conventional_mine',
+        'cultivation',
+        'habitation',
+        'haze',
+        'partly_cloudy',
+        'primary',
+        'road',
+        'selective_logging',
+        'slash_burn',
+        'water']

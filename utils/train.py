@@ -1,21 +1,49 @@
 import torch.nn as nn
+import torch
 import torch.optim as optim
 from torch.autograd import Variable
 import gc
 from scipy.special import expit
+from sklearn.preprocessing import MultiLabelBinarizer
+
 from sklearn.metrics import fbeta_score
 import numpy as np
 from .model import loadModel, countParams, checkpointModel
+from utils.constants import LABEL_LIST
+import pandas as pd
 
 
+#TBD - feed in a single tensor into the get_label_strings_from_tensor, rather than doing it per batch
+def predict(model, config, test_loader):
+    model.eval()
+    print_every = 5
+    preds_var = Variable(torch.FloatTensor(test_loader.dataset.num_examples,17).type(config.dtype), volatile=True)
+    for t, (x, _) in enumerate(test_loader):
+        if t%print_every == 0:
+            print(t)
+        x_var = Variable(x.type(config.dtype), volatile=True)
+        scores = model(x_var)
+        preds_var.data[t*test_loader.batch_size:t*test_loader.batch_size+x.size()[0]] = scores.data #tbd - verify this is good
+        
+    preds_var = nn.functional.sigmoid(preds_var)
+    preds_var[preds_var>.5] = 1
+    preds_var[preds_var<.5] = 0
+    preds = get_label_strings_from_tensor(preds_var.data)
+ 
+    subm = pd.DataFrame()
+    subm['image_name'] = test_loader.dataset.labels_df.image_name.values
+    subm['tags'] = preds
+    submission_name = "submission_tt_v3.csv"
+    subm.to_csv(submission_name, index=False)
+    print("made csv: ",submission_name)
 
-def predict(model, config):
-    #TODO
-    pass
-
-
-
-
+def get_label_strings_from_tensor(pred_labels_tensor):
+    mlb = MultiLabelBinarizer(classes = LABEL_LIST)
+    mlb = mlb.fit(None) #what hte fuck
+    pred_labels_cpu = pred_labels_tensor.cpu().numpy()
+    pred_labels_str = mlb.inverse_transform(pred_labels_cpu)
+    pred_labels = [" ".join(pred_labels_str[i]) for i in range(pred_labels_cpu.shape[0])]
+    return pred_labels
 
 # Function: check_accuracy
 # 
