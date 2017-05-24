@@ -46,8 +46,8 @@ def main():
     train_sampler = SubsetRandomSampler(train_idx)
     val_sampler = SubsetRandomSampler(val_idx)
 
-    train_loader = DataLoader(train_dataset, batch_size = config.batch_size, num_workers = 4, sampler = train_sampler)
-    val_loader = DataLoader(train_dataset, batch_size = config.batch_size, num_workers = 1, sampler = val_sampler)
+    train_loader = DataLoader(train_dataset, batch_size = config.batch_size, num_workers = 8, sampler = train_sampler)
+    val_loader = DataLoader(train_dataset, batch_size = config.batch_size, num_workers = 8, sampler = val_sampler)
     
     config.train_loader = train_loader
     config.val_loader = val_loader

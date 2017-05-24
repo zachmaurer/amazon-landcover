@@ -33,7 +33,7 @@ def predict(model, config, test_loader):
     subm = pd.DataFrame()
     subm['image_name'] = test_loader.dataset.labels_df.image_name.values
     subm['tags'] = preds
-    submission_name = "submission_tt_v3.csv"
+    submission_name = "submission_tt_v4.csv"
     subm.to_csv(submission_name, index=False)
     print("made csv: ",submission_name)
 
