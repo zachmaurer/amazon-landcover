@@ -6,3 +6,4 @@ input/*
 credentials
 experiments/*
 __pycache__/*
+archive/*
