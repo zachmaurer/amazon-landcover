@@ -7,7 +7,7 @@ from utils import train, predict
 from utils import NaiveDataset, splitIndices
 from utils import Config, parseConfig
 from utils.layers import Flatten
-from utils.constants import NUM_CLASSES, TRAIN_DATA_PATH, TRAIN_LABELS_PATH, NUM_TRAIN
+from utils.constants import NUM_CLASSES, TRAIN_DATA_PATH, TRAIN_LABELS_PATH, NUM_TRAIN, TEST_DATA_PATH, TEST_LABELS_PATH
 from utils import visualize
 
 
@@ -150,21 +150,26 @@ def main():
     train_sampler = SubsetRandomSampler(train_idx)
     val_sampler = SubsetRandomSampler(val_idx)
 
-    train_loader = DataLoader(train_dataset, batch_size = config.batch_size, num_workers = 4, sampler = train_sampler)
-    val_loader = DataLoader(train_dataset, batch_size = config.batch_size, num_workers = 4, sampler = val_sampler)
+    train_loader = DataLoader(train_dataset, batch_size = config.batch_size, num_workers = 3, sampler = train_sampler)
+    val_loader = DataLoader(train_dataset, batch_size = config.batch_size, num_workers = 1, sampler = val_sampler)
     
     config.train_loader = train_loader
     config.val_loader = val_loader
 
     # Create Model
-    model = UNet().type(config.dtype)
+    model = UNet().cuda()
 
     # Train and Eval Model
     results = train(model, config)
     visualize.plot_results(results, config)
+  
+    # Evaluate Results
+    test_dataset = NaiveDataset(TEST_DATA_PATH, TEST_LABELS_PATH)
+    test_loader = DataLoader(test_dataset, batch_size = 250, shuffle = False, num_workers = 3)
 
-    predict(model, config) # TODO, see train.py
-    
+    predict(model, config, test_loader, dataset = "test")
+    predict(model, config, train_loader, dataset = "train")
+    predict(model, config, val_loader, dataset = "val")
 
 if __name__ == '__main__':
     # model = UNet()
