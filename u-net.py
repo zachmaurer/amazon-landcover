@@ -96,10 +96,10 @@ class UNet(nn.Module):
     self.filter_seq = [128, 256, 512, 1024]
 
     self.conv1 = UNetConvModule(3, self.filter_seq[0])
-    self.pc1 = UNetPoolCropModule(crop_size = 128)
+    self.pc1 = UNetPoolCropModule(crop_size = None)
 
     self.conv2 = UNetConvModule(self.filter_seq[0], self.filter_seq[1])
-    self.pc2 = UNetPoolCropModule(crop_size = 64)
+    self.pc2 = UNetPoolCropModule(crop_size = None)
 
     self.conv3 = UNetConvModule(self.filter_seq[1], self.filter_seq[2])
     self.pc3 = UNetPoolCropModule(crop_size = None)
@@ -112,7 +112,7 @@ class UNet(nn.Module):
     # Output Layer
     self.out_conv = nn.Conv2d(self.filter_seq[0], 1, 3, padding =1)
     self.flatten = Flatten()
-    self.out_dense = nn.Linear(128**2, NUM_CLASSES)
+    self.out_dense = nn.Linear(256**2, NUM_CLASSES)
 
   def forward(self, input):
     # Seg Net
@@ -123,11 +123,10 @@ class UNet(nn.Module):
     h2_pool, h2_crop = self.pc2(h2)
 
     h3 = self.conv3(h2_pool)
-    h3_pool, _  = self.pc3(h3)
+    _, h3_crop  = self.pc3(h3)
     
-
     # Agg Net
-    q3 = self.agg3(h3_pool)
+    q3 = self.agg3(h3_crop)
     q2 = self.agg2(h2_crop, branch_input = q3)
     q1 = self.agg1(h1_crop, branch_input = q2)
     
