@@ -53,10 +53,8 @@ def main():
     config.val_loader = val_loader
     
     #get test data
-    print("get test data")
     test_dataset = NaiveDataset(TEST_DATA_PATH, TEST_LABELS_PATH)
-    test_loader = DataLoader(test_dataset, batch_size = 250, shuffle = False, num_workers = 8)
-    print("got test data")
+    test_loader = DataLoader(test_dataset, batch_size = config.batch_size, shuffle = False, num_workers = 2)
     
     # Create Model
     model = createModel(config)
@@ -65,8 +63,11 @@ def main():
     results = train(model, config)
     visualize.plot_results(results, config)
 
-    predict(model, config, test_loader) # TODO, see train.py
-    
+    make_predictions = True
+    if make_predictions:
+      predict(model, config, test_loader, dataset = "test")
+      predict(model, config, train_loader, dataset = "train")
+      predict(model, config, val_loader, dataset = "val")
 
 if __name__ == '__main__':
     main()
