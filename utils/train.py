@@ -11,29 +11,30 @@ import numpy as np
 from .model import loadModel, countParams, checkpointModel
 from utils.constants import LABEL_LIST
 import pandas as pd
+import os
 
 
 #TBD - feed in a single tensor into the get_label_strings_from_tensor, rather than doing it per batch
-def predict(model, config, test_loader):
+def predict(model, config, loader, dataset = ""):
     model.eval()
     print_every = 5
-    preds_var = Variable(torch.FloatTensor(test_loader.dataset.num_examples,17).type(config.dtype), volatile=True)
-    for t, (x, _) in enumerate(test_loader):
+    preds_var = Variable(torch.FloatTensor(loader.dataset.num_examples,17).type(config.dtype), volatile=True)
+    for t, (x, _) in enumerate(loader):
         if t%print_every == 0:
             print(t)
         x_var = Variable(x.type(config.dtype), volatile=True)
         scores = model(x_var)
-        preds_var.data[t*test_loader.batch_size:t*test_loader.batch_size+x.size()[0]] = scores.data #tbd - verify this is good
+        preds_var.data[t*loader.batch_size:t*loader.batch_size+x.size()[0]] = scores.data #tbd - verify this is good
         
     preds_var = nn.functional.sigmoid(preds_var)
-    preds_var[preds_var>.5] = 1
-    preds_var[preds_var<.5] = 0
+    preds_var[preds_var>0.5] = 1
+    preds_var[preds_var<=0.5] = 0
     preds = get_label_strings_from_tensor(preds_var.data)
  
     subm = pd.DataFrame()
-    subm['image_name'] = test_loader.dataset.labels_df.image_name.values
+    subm['image_name'] = loader.dataset.labels_df.image_name.values
     subm['tags'] = preds
-    submission_name = "submission_tt_v3.csv"
+    submission_name = os.path.join(config.log_dest, "submission_tt_v3_{}.csv".format(dataset))
     subm.to_csv(submission_name, index=False)
     print("made csv: ",submission_name)
 
@@ -54,6 +55,45 @@ def get_label_strings_from_tensor(pred_labels_tensor):
 #   model: the model object
 #   loader: DataLoader in pytorch
 #  
+def eval_performance(model, config, loader, f2 = True, recall = True, acc = True, label = ""):
+    sum_f2 = 0.0
+    num_samples_f2 = 0
+    num_correct_recall = 0
+    num_samples_recall = 0
+    num_correct_acc = 0
+    num_samples_acc = 0
+
+    model.eval()
+    for x, y in loader:
+        y = y.type(torch.cuda.ByteTensor) if config.use_gpu else y.type(torch.ByteTensor)
+        x_var = Variable(x.type(config.dtype), volatile=True)
+        scores = model(x_var)
+        #scores = expit(scores.data.cpu().numpy())
+        scores = nn.functional.sigmoid(scores)
+        preds = scores > 0.5
+        if f2:
+            sum_f2 += fbeta_score(preds.data.cpu().numpy(), y.cpu().numpy(), beta=2, average='samples')*y.size(0)
+            num_samples_f2 += y.size(0)
+        if recall:
+            num_correct_recall += (preds.data == y).sum()
+            num_samples_recall += preds.size(0)*17
+        if acc:
+            #num_correct_acc += np.sum([1 for i in range(preds.size(0)) if np.array_equal(preds[i].data.cpu().numpy(), y.cpu().numpy()[i])])
+            num_correct_acc += (((preds.data == y).sum(1)) == 17).sum()
+            num_samples_acc += preds.size(0)
+    if f2:
+        f2_score = float(sum_f2)/num_samples_f2
+        config.log('F2 score {%s} : Got %.2f' % (label, 100.0 * f2_score))
+    if recall:
+        recall = float(num_correct_recall) / num_samples_recall
+        config.log('Global recall {%s} : Got %d / %d correct (%.2f)' % (label, num_correct_recall, num_samples_recall, 100.0 * recall))
+    if acc:
+        acc = float(num_correct_acc) / num_samples_acc
+        config.log('All or none acc {%s} : Got %d / %d correct (%.2f)' % (label, num_correct_acc, num_samples_acc, 100 * acc))
+    model.train()
+    return f2_score, recall, acc
+
+
 def f2_score(model, config, loader, label=""):
     sum_f2 = 0.0 
     model.eval()
@@ -198,14 +238,23 @@ def train(model, config, loss_fn = None, optimizer = None):
         config.log("Finished Epoch {}/{}".format(epoch + 1, config.epochs))
         config.log("Evaluating...")
         if config.train_loader:
-            train_f2_history.append(f2_score(model, config, config.train_loader, "train"))
-            train_all_or_none_acc_history.append(check_all_or_none_accuracy(model, config, config.train_loader, "train"))
-            train_global_recall_history.append(check_global_recall(model, config, config.train_loader, "train"))
+            f2, recall, acc = eval_performance(model, config, config.train_loader, label = "train")
+            train_f2_history.append(f2)
+            train_global_recall_history.append(recall)
+            train_all_or_none_acc_history.append(acc)
+            # train_f2_history.append(f2_score(model, config, config.train_loader, "train"))
+            # train_all_or_none_acc_history.append(check_all_or_none_accuracy(model, config, config.train_loader, "train"))
+            # train_global_recall_history.append(check_global_recall(model, config, config.train_loader, "train"))
         if config.val_loader:
-            val_f2_history.append(f2_score(model, config, config.val_loader, "val"))
-            val_all_or_none_acc_history.append(check_all_or_none_accuracy(model, config, config.val_loader, "val"))
-            val_global_recall_history.append(check_global_recall(model, config, config.val_loader, "val"))
+            f2, recall, acc = eval_performance(model, config, config.val_loader, label = "val")
+            val_f2_history.append(f2)
+            val_global_recall_history.append(recall)
+            val_all_or_none_acc_history.append(acc)
+            # val_f2_history.append(f2_score(model, config, config.val_loader, "val"))
+            # val_all_or_none_acc_history.append(check_all_or_none_accuracy(model, config, config.val_loader, "val"))
+            # val_global_recall_history.append(check_global_recall(model, config, config.val_loader, "val"))
 
+        is_best = False
         if float(val_f2_history[-1]) > float(best_f2):
             best_f2 = val_f2_history[-1]
             is_best = True
