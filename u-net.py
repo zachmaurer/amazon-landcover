@@ -166,12 +166,14 @@ def main():
     visualize.plot_results(results, config)
   
     # Evaluate Results
-    test_dataset = NaiveDataset(TEST_DATA_PATH, None)
-    test_loader = DataLoader(test_dataset, batch_size = 250, shuffle = False, num_workers = 3)
+    test_dataset = NaiveDataset(TEST_DATA_PATH, TEST_LABELS_PATH)
+    test_loader = DataLoader(test_dataset, batch_size = config.batch_size, shuffle = False, num_workers = 3)
 
-    #predict(model, config, test_loader, dataset = "test")
-    predict(model, config, train_loader, dataset = "train")
-    #predict(model, config, val_loader, dataset = "val")
+    make_predictions = True
+    if make_predictions:
+      #predict(model, config, test_loader, dataset = "test")
+      predict(model, config, train_loader, dataset = "train")
+      predict(model, config, val_loader, dataset = "val")
 
 if __name__ == '__main__':
     # model = UNet()

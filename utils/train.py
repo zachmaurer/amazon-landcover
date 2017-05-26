@@ -16,6 +16,7 @@ import os
 
 #TBD - feed in a single tensor into the get_label_strings_from_tensor, rather than doing it per batch
 def predict(model, config, loader, dataset = ""):
+    config.log("Predicting on {}".format(dataset))
     model.eval()
     print_every = 5
     preds_var = Variable(torch.FloatTensor(loader.dataset.num_examples,17).type(config.dtype), volatile=True)
@@ -36,7 +37,7 @@ def predict(model, config, loader, dataset = ""):
     subm['tags'] = preds
     submission_name = os.path.join(config.log_dest, "submission_tt_v3_{}.csv".format(dataset))
     subm.to_csv(submission_name, index=False)
-    print("made csv: ",submission_name)
+    config.log("Done. Made csv: {}".format(submission_name))
 
 def get_label_strings_from_tensor(pred_labels_tensor):
     mlb = MultiLabelBinarizer(classes = LABEL_LIST)
