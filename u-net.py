@@ -163,17 +163,19 @@ def main():
 
     # Train and Eval Model
     loss_fn = nn.MultiLabelMarginLoss().type(config.dtype)
-    loss_fn = None # using SoftMargin
+    #loss_fn = None # using SoftMargin
     results = train(model, config, loss_fn = loss_fn)
     visualize.plot_results(results, config)
   
     # Evaluate Results
-    test_dataset = NaiveDataset(TEST_DATA_PATH, None)
+    test_dataset = NaiveDataset(TEST_DATA_PATH, TEST_LABELS_PATH)
     test_loader = DataLoader(test_dataset, batch_size = 250, shuffle = False, num_workers = 3)
 
-    #predict(model, config, test_loader, dataset = "test")
-    #predict(model, config, train_loader, dataset = "train")
-    #predict(model, config, val_loader, dataset = "val")
+    predict = True
+    if predict:
+      predict(model, config, test_loader, dataset = "test")
+      predict(model, config, train_loader, dataset = "train")
+      predict(model, config, val_loader, dataset = "val")
 
 if __name__ == '__main__':
     # model = UNet()

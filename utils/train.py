@@ -209,7 +209,7 @@ def train(model, config, loss_fn = None, optimizer = None):
         for t, (x, y) in enumerate(config.train_loader):
             # Train
             x_var = Variable(x.type(config.dtype))
-            y_var = Variable(y.type(config.dtype)) # removed .long() ?
+            y_var = Variable(y.type(config.dtype))
             scores = model(x_var)            
             loss = loss_fn(scores, y_var)
             loss_history.append(loss.data[0])
