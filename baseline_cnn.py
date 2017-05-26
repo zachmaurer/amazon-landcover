@@ -53,20 +53,21 @@ def main():
     config.val_loader = val_loader
     
     #get test data
-    print("get test data")
     test_dataset = NaiveDataset(TEST_DATA_PATH, TEST_LABELS_PATH)
-    test_loader = DataLoader(test_dataset, batch_size = 250, shuffle = False, num_workers = 8)
-    print("got test data")
+    test_loader = DataLoader(test_dataset, batch_size = 250, shuffle = False, num_workers = 4)
     
     # Create Model
     model = createModel(config)
 
     # Train and Eval Model
-    results = train(model, config)
+    loss_fn = nn.MultiLabelMarginLoss().type(config.dtype)
+    loss_fn = None # using SoftMargin
+    results = train(model, config, loss_fn = loss_fn)
     visualize.plot_results(results, config)
 
-    predict(model, config, test_loader) # TODO, see train.py
-    
+    #predict(model, config, test_loader, dataset = "test")
+    #predict(model, config, train_loader, dataset = "train")
+    #predict(model, config, val_loader, dataset = "val")
 
 if __name__ == '__main__':
     main()

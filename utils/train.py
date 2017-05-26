@@ -221,13 +221,9 @@ def train(model, config, loss_fn = None, optimizer = None):
             # Evaluate on train and val sets
             if config.eval_every and (t + 1) % config.eval_every == 0:
                 if config.train_loader:
-                    f2_score(model, config, config.train_loader, "train")
-                    check_all_or_none_accuracy(model, config, config.train_loader, "train")
-                    check_global_recall(model, config, config.train_loader, "train")
+                    eval_performance(model, config, config.train_loader, label = "train")
                 if config.val_loader:
-                    f2_score(model, config, config.val_loader, "val")
-                    check_all_or_none_accuracy(model, config, config.val_loader, "val")
-                    check_global_recall(model, config, config.val_loader, "val")
+                    eval_performance(model, config, config.val_loader, label = "val")
                              
             # Backprop
             optimizer.zero_grad()
