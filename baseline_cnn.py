@@ -9,29 +9,33 @@ from utils.layers import Flatten
 from utils.constants import NUM_CLASSES, TRAIN_DATA_PATH, TRAIN_LABELS_PATH, NUM_TRAIN, TEST_DATA_PATH, TEST_LABELS_PATH
 from utils import visualize
 
-def createModel(config):
-    model = nn.Sequential(
-                      # Conv_Relu_BatchNorm --> 32 x 32
-                      nn.Conv2d(3, 32, kernel_size = 7, stride = 1, padding = 2),
-                      nn.ReLU(inplace=True),
-                      nn.BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True),
-                      nn.MaxPool2d(4, stride=2),
-      
-                      # Conv_Relu_BatchNorm_Maxpool --> 32 x 14 x 14
-                      nn.Conv2d(32, 32, kernel_size=3, stride=1, padding = 2),
-                      nn.ReLU(inplace=True),
-                      nn.BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True),
-                      nn.MaxPool2d(2, stride=2),
-      
-                      # Aggregation Layers
-                      Flatten(), # see above for explanation
-                      nn.Linear(131072, 2048), # affine layer
-                      nn.ReLU(inplace = False),
-                      nn.Dropout(p=0.55, inplace = False),
-                      nn.Linear(2048, NUM_CLASSES), # affine layer
-            )
-    model = model.type(config.dtype)
-    return model 
+class BaselineCNN(nn.Module):
+    def __init__(self, config):
+      super(BaselineCNN, self).__init__()
+      self.model = nn.Sequential(
+                        # Conv_Relu_BatchNorm --> 32 x 32
+                        nn.Conv2d(3, 32, kernel_size = 7, stride = 1, padding = 2),
+                        nn.ReLU(inplace=True),
+                        nn.BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True),
+                        nn.MaxPool2d(4, stride=2),
+        
+                        # Conv_Relu_BatchNorm_Maxpool --> 32 x 14 x 14
+                        nn.Conv2d(32, 32, kernel_size=3, stride=1, padding = 2),
+                        nn.ReLU(inplace=True),
+                        nn.BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True),
+                        nn.MaxPool2d(2, stride=2),
+        
+                        # Aggregation Layers
+                        Flatten(), # see above for explanation
+                        nn.Linear(131072, 2048), # affine layer
+                        nn.ReLU(inplace = False),
+                        nn.Dropout(p=0.55, inplace = False),
+                        nn.Linear(2048, NUM_CLASSES), # affine layer
+              )
+      self.model = self.model.type(config.dtype)
+    
+    def forward(self, input):
+      return self.model(input)
 
 
 def main():
@@ -57,7 +61,7 @@ def main():
     test_loader = DataLoader(test_dataset, batch_size = config.batch_size, shuffle = False, num_workers = 2)
     
     # Create Model
-    model = createModel(config)
+    model = BaselineCNN(config)
 
     # Train and Eval Model
     results = train(model, config)
