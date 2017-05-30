@@ -9,7 +9,7 @@ from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.metrics import fbeta_score
 import numpy as np
 from .model import loadModel, countParams, checkpointModel
-from utils.constants import LABEL_LIST
+from utils.constants import LABEL_LIST, LABEL_WEIGHTS
 import pandas as pd
 import os
 
@@ -213,7 +213,7 @@ def check_per_class_accuracy(model, config, loader, label = ""):
 #  
 def train(model, config, loss_fn = None, optimizer = None):
     if not loss_fn:
-        loss_fn = nn.MultiLabelSoftMarginLoss().type(config.dtype) # TODO: should the loss function run on the CPU or GPU?
+        loss_fn = nn.MultiLabelSoftMarginLoss(weight = LABEL_WEIGHTS).type(config.dtype) # TODO: should the loss function run on the CPU or GPU?
     if not optimizer:
         optimizer = optim.Adam(model.parameters(), lr = config.lr) 
 
