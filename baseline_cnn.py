@@ -5,7 +5,7 @@ from torch.utils.data.sampler import SubsetRandomSampler
 from utils import train, predict
 from utils import NaiveDataset, splitIndices
 from utils import Config, parseConfig
-from utils.layers import Flatten
+from utils.layers import Flatten, initialize_weights
 from utils.constants import NUM_CLASSES, TRAIN_DATA_PATH, TRAIN_LABELS_PATH, NUM_TRAIN, TEST_DATA_PATH, TEST_LABELS_PATH
 from utils import visualize
 
@@ -62,6 +62,7 @@ def main():
     
     # Create Model
     model = BaselineCNN(config)
+    model.apply(initialize_weights)
 
     # Train and Eval Model
     results = train(model, config)
