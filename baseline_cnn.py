@@ -69,9 +69,9 @@ def main():
 
     make_predictions = True
     if make_predictions:
-      predict(model, config, test_loader, dataset = "test")
       predict(model, config, train_loader, dataset = "train")
       predict(model, config, val_loader, dataset = "val")
+      predict(model, config, test_loader, dataset = "test")
 
 if __name__ == '__main__':
     main()
