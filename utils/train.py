@@ -241,6 +241,7 @@ def train(model, config, loss_fn = None, optimizer = None):
     for epoch in range(config.epochs):
         config.log('\nStarting epoch %d / %d' % (epoch + 1, config.epochs))
         loss_total = 0.0
+        grad_magnitude = 0.0
         for t, (x, _, y) in enumerate(config.train_loader):
             # Train
             x_var = Variable(x.type(config.dtype))
@@ -266,11 +267,14 @@ def train(model, config, loss_fn = None, optimizer = None):
             loss.backward()
             optimizer.step()
 
+            grad_magnitude_t = [(x.grad.data.sum(), torch.numel(x.grad.data)) for x in model.parameters() if x.grad.data.sum() != 0.0]
+            grad_magnitude += sum([abs(x[0]) for x in grad_magnitude_t]) #/ sum([x[1] for x in grad_magnitude])
+
             # Print Loss
             if config.print_every and (t + 1) % config.print_every == 0:
-                grad_magnitude = [(x.grad.data.sum(), torch.numel(x.grad.data)) for x in model.parameters() if x.grad.data.sum() != 0.0]
-                grad_magnitude = sum([abs(x[0]) for x in grad_magnitude]) #/ sum([x[1] for x in grad_magnitude])
-                config.log('t = %d, avg_loss = %.4f, grad_mag = %.4f' % (t + 1, loss_total / (t+1), grad_magnitude))
+                #grad_magnitude = [(x.grad.data.sum(), torch.numel(x.grad.data)) for x in model.parameters() if x.grad.data.sum() != 0.0]
+                #grad_magnitude = sum([abs(x[0]) for x in grad_magnitude]) #/ sum([x[1] for x in grad_magnitude])
+                config.log('t = %d, avg_loss = %.4f, grad_mag = %.4f' % (t + 1, loss_total / (t+1), grad_magnitude / (t+1)))
 
             gc.collect()
 
