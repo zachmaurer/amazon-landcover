@@ -166,8 +166,8 @@ def main():
     visualize.plot_results(results, config)
   
     # Evaluate Results
-    test_dataset = NaiveDataset(TEST_DATA_PATH, TEST_LABELS_PATH)
-    test_loader = DataLoader(test_dataset, batch_size = config.batch_size, shuffle = False, num_workers = 3)
+    test_dataset = NaiveDataset(TEST_DATA_PATH, TEST_LABELS_PATH, num_examples = 20)
+    test_loader = DataLoader(test_dataset, batch_size = 10, shuffle = False, num_workers = 3)
 
     make_predictions = True
     if make_predictions:

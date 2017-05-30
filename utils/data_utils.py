@@ -50,7 +50,7 @@ class NaiveDataset(Dataset):
         im = Image.open(self.data_path + image_name + '.jpg')
         im = np.array(im)[:,:,:3]
         im = np.reshape(im,(im.shape[2],im.shape[0],im.shape[1]))
-        return torch.from_numpy(im)
+        return torch.from_numpy(im), image_name
     
     def __init__(self, data_path, labels_path, num_examples=None):
         self.labels_df = pd.read_csv(labels_path)
@@ -68,9 +68,9 @@ class NaiveDataset(Dataset):
         self.data_path = data_path
 
     def __getitem__(self, idx):
-        data_tensor = self.load_image(idx)
+        data_tensor, image_name = self.load_image(idx)
         target_tensor = self.labels_tensor[idx]
-        return data_tensor,target_tensor
+        return data_tensor, image_name, target_tensor
 
     def __len__(self):
         return self.num_examples

@@ -19,21 +19,54 @@ def predict(model, config, loader, dataset = ""):
     config.log("Predicting on {}".format(dataset))
     model.eval()
     print_every = 5
-    preds_var = Variable(torch.FloatTensor(loader.dataset.num_examples,17).type(config.dtype), volatile=True)
-    for t, (x, _) in enumerate(loader):
-        if t%print_every == 0:
-            print(t)
-        x_var = Variable(x.type(config.dtype), volatile=True)
-        scores = model(x_var)
-        preds_var.data[t*loader.batch_size:t*loader.batch_size+x.size()[0]] = scores.data #tbd - verify this is good
+    
+    num_examples = 0
+    
+    if dataset is 'train':
+        num_examples = config.num_train
+    elif dataset is 'val':
+        num_examples = config.num_val
+    elif dataset is 'test':
+        num_examples = loader.dataset.num_examples
+    
+    preds_var = Variable(torch.FloatTensor(num_examples,17).type(config.dtype), volatile=True)
+    subm = None
+    image_list = []
+    
+    if dataset is not "test":
+        subm = pd.DataFrame(columns=('image_name', 'tags', 'labels'))
+        labels_var = Variable(torch.FloatTensor(num_examples,17).type(config.dtype), volatile=True)
+        for t, (x, image_names, y) in enumerate(loader):
+            if t%print_every == 0:
+                print(t)
+            x_var = Variable(x.type(config.dtype), volatile=True)
+            scores = model(x_var)
+            preds_var.data[t*loader.batch_size:t*loader.batch_size+x.size()[0]] = scores.data #tbd - verify this is good
+            labels_var.data[t*loader.batch_size:t*loader.batch_size+x.size()[0]] = y
+            image_list.extend(image_names)
+        #hacky
+        labels_var[labels_var>.5] = 1
+        labels_var[labels_var<.5] = 0
+        labels = get_label_strings_from_tensor(labels_var.data)
         
+        subm['labels'] = labels
+        
+    else: #dataset is 'test'..
+        subm = pd.DataFrame(columns=('image_name', 'tags'))
+        for t, (x, image_names, _) in enumerate(loader):
+            if t%print_every == 0:
+                print(t)
+            x_var = Variable(x.type(config.dtype), volatile=True)
+            scores = model(x_var)
+            preds_var.data[t*loader.batch_size:t*loader.batch_size+x.size()[0]] = scores.data #tbd - verify this is good
+            image_list.extend(image_names)
+            
     preds_var = nn.functional.sigmoid(preds_var)
     preds_var[preds_var>0.5] = 1
     preds_var[preds_var<=0.5] = 0
     preds = get_label_strings_from_tensor(preds_var.data)
- 
-    subm = pd.DataFrame()
-    subm['image_name'] = loader.dataset.labels_df.image_name.values
+    
+    subm['image_name'] = image_list
     subm['tags'] = preds
     submission_name = os.path.join(config.log_dest, "submission_tt_v3_{}.csv".format(dataset))
     subm.to_csv(submission_name, index=False)
@@ -65,7 +98,7 @@ def eval_performance(model, config, loader, f2 = True, recall = True, acc = True
     num_samples_acc = 0
 
     model.eval()
-    for x, y in loader:
+    for x, _, y in loader:
         y = y.type(torch.cuda.ByteTensor) if config.use_gpu else y.type(torch.ByteTensor)
         x_var = Variable(x.type(config.dtype), volatile=True)
         scores = model(x_var)
@@ -99,7 +132,7 @@ def f2_score(model, config, loader, label=""):
     sum_f2 = 0.0 
     model.eval()
     num_samples = 0
-    for x, y in loader:
+    for x, _, y in loader:
         x_var = Variable(x.type(config.dtype), volatile=True)
         scores = model(x_var)
         scores = expit(scores.data.cpu().numpy())
@@ -115,7 +148,7 @@ def check_global_recall(model, config, loader, label = ""):
     num_correct = 0
     num_samples = 0
     model.eval()
-    for x, y in loader:
+    for x, _, y in loader:
         x_var = Variable(x.type(config.dtype), volatile=True)
         scores = model(x_var)
         scores = expit(scores.data.cpu().numpy())
@@ -133,7 +166,7 @@ def check_all_or_none_accuracy(model, config, loader, label = ""):
     num_correct = 0
     num_samples = 0
     model.eval()
-    for x, y in loader:
+    for x, _, y in loader:
         x_var = Variable(x.type(config.dtype), volatile=True)
         scores = model(x_var)
         scores = expit(scores.data.cpu().numpy())
@@ -151,7 +184,7 @@ def check_per_class_accuracy(model, config, loader, label = ""):
     num_correct = np.zeros((17,))
     num_samples = 0
     model.eval()
-    for x, y in loader:
+    for x, _, y in loader:
         x_var = Variable(x.type(config.dtype), volatile=True)
         scores = model(x_var)
         scores = expit(scores.data.cpu().numpy())
@@ -207,7 +240,7 @@ def train(model, config, loss_fn = None, optimizer = None):
     model.train()
     for epoch in range(config.epochs):
         config.log('\nStarting epoch %d / %d' % (epoch + 1, config.epochs))
-        for t, (x, y) in enumerate(config.train_loader):
+        for t, (x, _, y) in enumerate(config.train_loader):
             # Train
             x_var = Variable(x.type(config.dtype))
             y_var = Variable(y.type(config.dtype)) # removed .long() ?
