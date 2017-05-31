@@ -18,7 +18,7 @@ import os
 def predict(model, config, loader, dataset = ""):
     config.log("Predicting on {}".format(dataset))
     model.eval()
-    print_every = 5
+    print_every = 100
     
     num_examples = 0
     
@@ -127,59 +127,6 @@ def eval_performance(model, config, loader, f2 = True, recall = True, acc = True
     model.train()
     return f2_score, recall, acc
 
-
-def f2_score(model, config, loader, label=""):
-    sum_f2 = 0.0 
-    model.eval()
-    num_samples = 0
-    for x, _, y in loader:
-        x_var = Variable(x.type(config.dtype), volatile=True)
-        scores = model(x_var)
-        scores = expit(scores.data.cpu().numpy())
-        # multiply by num examples to get sum, not average
-        sum_f2 += fbeta_score(scores > 0.5, y.cpu().numpy(), beta=2, average='samples')*y.size(0)
-        num_samples += y.cpu().numpy().shape[0]
-    f2_score = float(sum_f2)/num_samples
-    config.log('F2 score {%s} : Got %.2f' % (label, 100.0 * f2_score))
-    model.train()
-    return f2_score
-
-def check_global_recall(model, config, loader, label = ""):
-    num_correct = 0
-    num_samples = 0
-    model.eval()
-    for x, _, y in loader:
-        x_var = Variable(x.type(config.dtype), volatile=True)
-        scores = model(x_var)
-        scores = expit(scores.data.cpu().numpy())
-        # sigmoid 
-
-        preds = scores > 0.5
-        num_correct += (preds == y.cpu().numpy()).sum()
-        num_samples += preds.shape[0]*17
-    acc = float(num_correct) / num_samples
-    config.log('Global recall {%s} : Got %d / %d correct (%.2f)' % (label, num_correct, num_samples, 100.0 * acc))
-    model.train()
-    return acc
-
-def check_all_or_none_accuracy(model, config, loader, label = ""):
-    num_correct = 0
-    num_samples = 0
-    model.eval()
-    for x, _, y in loader:
-        x_var = Variable(x.type(config.dtype), volatile=True)
-        scores = model(x_var)
-        scores = expit(scores.data.cpu().numpy())
-        # sigmoid 
-
-        preds = scores > 0.5
-        num_correct += np.sum([1 for i in range(preds.shape[0]) if np.array_equal(preds[i], y.cpu().numpy()[i])])
-        num_samples += preds.shape[0]
-    acc = float(num_correct) / num_samples
-    config.log('All or none acc {%s} : Got %d / %d correct (%.2f)' % (label, num_correct, num_samples, 100 * acc))
-    model.train()
-    return acc
-
 def check_per_class_accuracy(model, config, loader, label = ""):
     num_correct = np.zeros((17,))
     num_samples = 0
@@ -213,7 +160,7 @@ def check_per_class_accuracy(model, config, loader, label = ""):
 #  
 def train(model, config, loss_fn = None, optimizer = None):
     if not loss_fn:
-        loss_fn = nn.MultiLabelSoftMarginLoss(weight = LABEL_WEIGHTS).type(config.dtype) # TODO: should the loss function run on the CPU or GPU?
+        loss_fn = nn.MultiLabelSoftMarginLoss(weight = None).type(config.dtype) # TODO: should the loss function run on the CPU or GPU?
     if not optimizer:
         optimizer = optim.Adam(model.parameters(), lr = config.lr) 
 
