@@ -48,12 +48,15 @@ class NaiveDataset(Dataset):
     def load_image(self, idx):
         image_name = self.labels_df['image_name'][idx]
         im = Image.open(self.data_path + image_name + '.jpg')
+        if self.transform is not None:
+            im = self.transform(im)
         im = np.array(im)[:,:,:3]
         im = np.reshape(im,(im.shape[2],im.shape[0],im.shape[1]))
         return torch.from_numpy(im), image_name
     
-    def __init__(self, data_path, labels_path, num_examples=None):
+    def __init__(self, data_path, labels_path, num_examples=None, transform=None):
         self.labels_df = pd.read_csv(labels_path)
+        self.transform = transform
         if num_examples is None:
             self.num_examples = self.labels_df.shape[0]
             print(self.num_examples)
