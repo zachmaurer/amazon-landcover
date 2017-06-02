@@ -11,3 +11,5 @@ Anytime you wwant to makea submission, do this, with 'entry' being the .csv file
 
 The competition for the amazon satellite classification:
 planet-understanding-the-amazon-from-space
+
+kg submit 'submission_tt_v3_test.csv' -u 'tanujt' -p 'Kaggle2017' -c 'planet-understanding-the-amazon-from-space' -m 'baseline_cnn with 85 f2 val'
