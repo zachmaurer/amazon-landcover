@@ -71,6 +71,7 @@ class Config:
 
   def __str__(self):
     config_str = "Config for experiment:   {}".format(self.experiment_id)
+    config_str += "\n\ttitle: {}".format(self.title)
     config_str += "\n\tgpu: {}".format(self.use_gpu)
     config_str += "\n\tepochs: {}".format(self.epochs)
     config_str += "\n\tbatch_size: {}".format(self.batch_size)
@@ -79,6 +80,7 @@ class Config:
     config_str += "\n\tnum_val (if None using all): {}".format(self.num_val)  
     config_str += "\n"
     config_str += "\n\tsave_dest: {}".format(self.save_dest)
+    config_str += "\n\tsave_every: {}".format(self.save_every)
     config_str += "\n\tprint_every: {}".format(self.print_every)
     config_str += "\n\teval_every: {}".format(self.eval_every)
     config_str += "\n"
@@ -119,7 +121,7 @@ def parseConfig(description="Default Model Description"):
   parser.add_argument('--path', help='save path for results, logs, checkpoints', default = "./experiments")
   parser.add_argument('--checkpoint', action='store', help='resume from an exisiting model', type=str, default = None)
   parser.add_argument('--predict', action='store_true', help='predict only, no training', default = False)
-  parser.add_argument('--save_every', action='store_true', help='save checkpoint after every epoch', default = False)
+  parser.add_argument('--save_every', type=int, help='save checkpoint after n epochs', default = 1)
   parser.add_argument('--no_save', action='store_true', help='save checkpoint after every epoch', default = False)
   args = parser.parse_args()
   return args

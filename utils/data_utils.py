@@ -45,10 +45,19 @@ class NaiveDataset(Dataset):
         labels_path (str): path to csv containing labels per image
         num_examples (int): number of examples
     """
-    def load_image(self, idx):
+    def load_image(self, idx, normalize=False):
         image_name = self.labels_df['image_name'][idx]
         im = Image.open(self.data_path + image_name + '.jpg')
         im = np.array(im)[:,:,:3]
+        
+        #standard normalize colors
+        if normalize:
+            im[:,:,0] -= np.mean(im[:,:,0])
+            im[:,:,0] /= np.std(im[:,:,0])
+            im[:,:,1] -= np.mean(im[:,:,1])
+            im[:,:,1] /= np.std(im[:,:,1])
+            im[:,:,2] -= np.mean(im[:,:,2])
+            im[:,:,2] /= np.std(im[:,:,2])            
         im = np.reshape(im,(im.shape[2],im.shape[0],im.shape[1]))
         return torch.from_numpy(im), image_name
     

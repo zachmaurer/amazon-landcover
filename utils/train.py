@@ -293,7 +293,7 @@ def train(model, config, loss_fn = None, optimizer = None):
             best_f2 = val_f2_history[-1]
             is_best = True
 
-        if config.save_every or is_best:
+        if config.save_every>0 or is_best:
             stats = {
                 'loss': loss_history[-1],
                 'train_f2': train_f2_history[-1],
@@ -304,7 +304,7 @@ def train(model, config, loss_fn = None, optimizer = None):
                 stats['val_f2'] = val_f2_history[-1]
                 stats['val_acc'] = val_all_or_none_acc_history[-1]
                 stats['val_recall'] = val_global_recall_history[-1]
-            if not config.no_save:
+            if not config.no_save and (epoch+1) % config.save_every==0 :
                 checkpointModel(model, config, optimizer, epoch, stats, is_best)
         gc.collect()
 
