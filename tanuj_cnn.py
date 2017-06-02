@@ -31,6 +31,7 @@ def createModel(config):
                       nn.Linear(2048, NUM_CLASSES), # affine layer
             )
     model = model.type(config.dtype)
+    return model
 
 
 def main():
