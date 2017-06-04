@@ -96,7 +96,7 @@ def eval_performance(model, config, loader, f2 = True, recall = True, acc = True
     num_samples_recall = 0
     num_correct_acc = 0
     num_samples_acc = 0
-
+    class_probabilities = torch.zeros(1, 17).cuda() if config.use_gpu else torch.zeros(1,17)
     model.eval()
     for x, _, y in loader:
         y = y.type(torch.cuda.ByteTensor) if config.use_gpu else y.type(torch.ByteTensor)
@@ -104,6 +104,7 @@ def eval_performance(model, config, loader, f2 = True, recall = True, acc = True
         scores = model(x_var)
         #scores = expit(scores.data.cpu().numpy())
         scores = nn.functional.sigmoid(scores)
+        class_probabilities += scores.data.sum(0)
         preds = scores > 0.5
         if f2:
             sum_f2 += fbeta_score(preds.data.cpu().numpy(), y.cpu().numpy(), beta=2, average='samples')*y.size(0)
@@ -125,6 +126,14 @@ def eval_performance(model, config, loader, f2 = True, recall = True, acc = True
         acc = float(num_correct_acc) / num_samples_acc
         config.log('All or none acc {%s} : Got %d / %d correct (%.2f)' % (label, num_correct_acc, num_samples_acc, 100 * acc))
     model.train()
+    class_probabilities /= num_samples_f2
+    class_probabilities = class_probabilities.cpu().numpy()
+    class_prob_str = "\n"
+    for i, x in enumerate(LABEL_LIST):
+        class_prob_str += "%s : %.4f \t" % (x, float(class_probabilities[0, i]))
+        if (i+1) % 3 == 0: class_prob_str += "\n"
+    config.log(class_prob_str)
+
     return f2_score, recall, acc
 
 def check_per_class_accuracy(model, config, loader, label = ""):
@@ -225,6 +234,7 @@ def train(model, config, loss_fn = None, optimizer = None, weight_decay = 0, lr_
                 config.log('t = %d, avg_loss = %.4f, grad_mag = %.4f' % (t + 1, loss_total / (t+1), grad_magnitude / (t+1)))
             if lr_decay:
                 lr = lr * 1/(1 + lr_decay * epoch)
+                print(lr)
                 optimizer = optim.Adam(model.parameters(), lr = lr, weight_decay = weight_decay) 
             gc.collect()
 
