@@ -10,6 +10,13 @@ from PIL import Image
 import random
 from utils.constants import LABEL_LIST
 
+import numpy as np
+
+#import scipy
+#from scipy.optimize import nnls
+from scipy.optimize import lsq_linear
+from scipy.sparse import csr_matrix
+
 
 def splitIndices(dataset, config, shuffle = True):
     random.seed(config.seed)
@@ -29,8 +36,15 @@ def splitIndices(dataset, config, shuffle = True):
     return train, val
 
 
-
-
+def UpsamplingWeights(dataset):
+    M_cpu = dataset.labels_tensor.cpu().numpy()
+    w_vec, res = np.linalg.lstsq(M_cpu.T,np.ones((17,)))[0:2]
+    M_sparse_T = csr_matrix(M_cpu.T)
+    w_vec, res = np.linalg.lstsq(M_cpu.T,np.ones((17,)))[0:2]
+    frac = 1/w_vec.shape[0]
+    res_tuple = lsq_linear(M_sparse_T,np.ones((17,)),bounds=(frac/4,np.inf),verbose=1)
+    w_lsq_lin = res_tuple['x']/np.sum(res_tuple['x'])*100
+    return w_lsq_lin
 
 
 #this is the naive implementation which pulls from file every time you get an item. no caching. Probably not useful anymore

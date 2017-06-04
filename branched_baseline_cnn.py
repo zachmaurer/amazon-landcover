@@ -1,10 +1,9 @@
 from torchvision import transforms
 from torch import nn
 from torch.utils.data import DataLoader
-from torch.utils.data.sampler import SubsetRandomSampler
-
+from torch.utils.data.sampler import SubsetRandomSampler, WeightedRandomSampler
 from utils import train, predict
-from utils import NaiveDataset, splitIndices
+from utils import NaiveDataset, splitIndices, UpsamplingWeights
 from utils import Config, parseConfig
 from utils.layers import Flatten, Conv_BN_Relu, initialize_weights
 from utils.constants import NUM_CLASSES, TRAIN_DATA_PATH, TRAIN_LABELS_PATH, NUM_TRAIN, TEST_DATA_PATH, TEST_LABELS_PATH
@@ -107,8 +106,18 @@ def main():
     train_dataset = NaiveDataset(TRAIN_DATA_PATH, TRAIN_LABELS_PATH, num_examples = NUM_TRAIN, transforms = transformations)
     train_idx, val_idx = splitIndices(train_dataset, config, shuffle = True)
 
+<<<<<<< Updated upstream
     train_sampler = SubsetRandomSampler(train_idx)
     val_sampler = SubsetRandomSampler(val_idx)
+=======
+    weights = UpsamplingWeights(train_dataset)
+    print(weights.shape)
+
+    train_sampler = WeightedRandomSampler(train_idx)
+    val_sampler = WeightedRandomSampler(val_idx)
+
+
+>>>>>>> Stashed changes
 
     # Loaders
     train_loader = DataLoader(train_dataset, batch_size = config.batch_size, num_workers = 4, sampler = train_sampler)
