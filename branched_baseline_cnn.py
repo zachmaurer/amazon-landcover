@@ -18,15 +18,15 @@ class BranchedCNN(nn.Module):
       self.stem = nn.Sequential(
           Conv_BN_Relu(3, 32, kernel_size = 1, stride = 1, padding = 0),
           Conv_BN_Relu(32, 64, kernel_size = 3, stride = 1, padding = 0),
-          Conv_BN_Relu(64, 64, kernel_size = 1, stride = 1, padding = 0)
+          Conv_BN_Relu(64, 128, kernel_size = 1, stride = 1, padding = 0)
         )
 
       self.conv1 = nn.Sequential(
-          Conv_BN_Relu(64, 32, kernel_size = 1, stride = 1, padding = 0),
-          Conv_BN_Relu(32, 32, kernel_size = 3, stride = 1, padding = 1),
-          Conv_BN_Relu(32, 64, kernel_size = 1, stride = 1, padding = 0),
+          Conv_BN_Relu(128, 128, kernel_size = 1, stride = 1, padding = 0),
+          Conv_BN_Relu(128, 256, kernel_size = 3, stride = 1, padding = 1),
+          Conv_BN_Relu(256, 128, kernel_size = 1, stride = 1, padding = 0),
           nn.MaxPool2d(2, stride=2), 
-          Conv_BN_Relu(64, 64, kernel_size = 5, stride = 1, padding = 1),
+          Conv_BN_Relu(128, 64, kernel_size = 5, stride = 1, padding = 1),
           nn.MaxPool2d(2, stride=2)
         )
 
@@ -42,18 +42,20 @@ class BranchedCNN(nn.Module):
         Conv_BN_Relu(64, 1, kernel_size = 1, stride = 1, padding = 0),
         nn.MaxPool2d(4, stride=2),
         Flatten(),
-        nn.Dropout(0.5),
+        nn.Dropout(0.7),
         nn.Linear(15876, 2400),
         nn.ReLU(),
+        nn.Dropout(0.2),
         nn.Linear(2400, NUM_CLASSES)
       )
 
       self.conv1_decoder = nn.Sequential(
         Conv_BN_Relu(64, 1, kernel_size = 1, stride = 1, padding = 0),
         Flatten(),
-        nn.Dropout(0.5),
+        nn.Dropout(0.7),
         nn.Linear(3844, 2400),
         nn.ReLU(),
+        nn.Dropout(0.2),
         nn.Linear(2400, NUM_CLASSES)
       )
 
@@ -61,9 +63,10 @@ class BranchedCNN(nn.Module):
         nn.MaxPool2d(2, stride=2),
         Conv_BN_Relu(256, 3, kernel_size = 1, stride = 1, padding = 0),
         Flatten(),
-        nn.Dropout(),
+        nn.Dropout(0.7),
         nn.Linear(46128, 2400),
         nn.ReLU(),
+        nn.Dropout(0.2),
         nn.Linear(2400, NUM_CLASSES)
       )
 
