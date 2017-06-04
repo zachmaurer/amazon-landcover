@@ -17,7 +17,7 @@ class BranchedCNN(nn.Module):
       super(BranchedCNN, self).__init__()
       self.stem = nn.Sequential(
           Conv_BN_Relu(3, 32, kernel_size = 1, stride = 1, padding = 0),
-          Conv_BN_Relu(32, 64, kernel_size = 3, stride = 1, padding = 0),
+          Conv_BN_Relu(32, 64, kernel_size = 3, stride = 1, padding = 1),
           Conv_BN_Relu(64, 128, kernel_size = 1, stride = 1, padding = 0)
         )
 
@@ -39,11 +39,11 @@ class BranchedCNN(nn.Module):
         )
 
       self.feats_decoder = nn.Sequential(
-        Conv_BN_Relu(64, 1, kernel_size = 1, stride = 1, padding = 0),
+        Conv_BN_Relu(128, 1, kernel_size = 1, stride = 1, padding = 0),
         nn.MaxPool2d(4, stride=2),
         Flatten(),
         nn.Dropout(0.7),
-        nn.Linear(15876, 2400),
+        nn.Linear(16129, 2400),
         nn.ReLU(),
         nn.Dropout(0.2),
         nn.Linear(2400, NUM_CLASSES)
@@ -53,7 +53,7 @@ class BranchedCNN(nn.Module):
         Conv_BN_Relu(64, 1, kernel_size = 1, stride = 1, padding = 0),
         Flatten(),
         nn.Dropout(0.7),
-        nn.Linear(3844, 2400),
+        nn.Linear(3969, 2400),
         nn.ReLU(),
         nn.Dropout(0.2),
         nn.Linear(2400, NUM_CLASSES)
@@ -64,7 +64,7 @@ class BranchedCNN(nn.Module):
         Conv_BN_Relu(256, 3, kernel_size = 1, stride = 1, padding = 0),
         Flatten(),
         nn.Dropout(0.7),
-        nn.Linear(46128, 2400),
+        nn.Linear(47628, 2400),
         nn.ReLU(),
         nn.Dropout(0.2),
         nn.Linear(2400, NUM_CLASSES)
