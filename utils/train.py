@@ -90,7 +90,7 @@ def get_label_strings_from_tensor(pred_labels_tensor):
 #   model: the model object
 #   loader: DataLoader in pytorch
 #  
-def eval_performance(model, config, loader, f2 = True, recall = True, acc = True, label = ""):
+def eval_performance(model, config, loader, f2 = True, recall = True, acc = True, label = "", print_probabilities = False):
     #thresholds = torch.FloatTensor(THRESHOLDS).cuda() if config.use_gpu else torch.FloatTensor(THRESHOLDS)
     #thresholds = Variable(thresholds)
     sum_f2 = 0.0
@@ -107,7 +107,8 @@ def eval_performance(model, config, loader, f2 = True, recall = True, acc = True
         scores = model(x_var)
         #scores = expit(scores.data.cpu().numpy())
         scores = nn.functional.sigmoid(scores)
-        #class_probabilities += scores.data.sum(0)
+        if print_probabilities:
+            class_probabilities += scores.data.sum(0)
         #preds = scores > thresholds.expand(scores.size(0), 17)
         preds = scores > 0.5
         if f2:
@@ -130,12 +131,13 @@ def eval_performance(model, config, loader, f2 = True, recall = True, acc = True
         acc = float(num_correct_acc) / num_samples_acc
         config.log('All or none acc {%s} : Got %d / %d correct (%.2f)' % (label, num_correct_acc, num_samples_acc, 100 * acc))
     model.train()
-    class_probabilities /= num_samples_f2
-    class_probabilities = class_probabilities.cpu().numpy()
-    table = PrettyTable(['Class', 'Average Probability'])
-    for i, x in enumerate(LABEL_LIST):
-        table.add_row([x, class_probabilities[0, i]])
-    config.log(table)
+    if print_probabilities:
+        class_probabilities /= num_samples_f2
+        class_probabilities = class_probabilities.cpu().numpy()
+        table = PrettyTable(['Class', 'Average Probability'])
+        for i, x in enumerate(LABEL_LIST):
+            table.add_row([x, class_probabilities[0, i]])
+        config.log(table)
 
     return f2_score, recall, acc
 

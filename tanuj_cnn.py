@@ -1,11 +1,11 @@
 from torch import nn
 from torch.utils.data import DataLoader 
-from torch.utils.data.sampler import SubsetRandomSampler
+from torch.utils.data.sampler import SubsetRandomSampler, WeightedRandomSampler
 
 from utils import train, predict
-from utils import NaiveDataset, splitIndices
+from utils import NaiveDataset, splitIndices, UpsamplingWeights
 from utils import Config, parseConfig
-from utils.layers import Flatten
+from utils.layers import Flatten, initialize_weights
 from utils.constants import NUM_CLASSES, TRAIN_DATA_PATH, TRAIN_LABELS_PATH, NUM_TRAIN, TEST_DATA_PATH, TEST_LABELS_PATH
 from utils import visualize
 
@@ -30,7 +30,8 @@ def createModel(config):
                       #nn.Dropout(p=0.45, inplace = False), #don't use dropout until I overfit..
                       nn.Linear(2048, NUM_CLASSES), # affine layer
             )
-    model = model.type(config.dtype)
+    if config.use_gpu:
+      model = model.cuda()
     return model
 
 
@@ -40,17 +41,23 @@ def main():
     config = Config(args)
     config.log(config)
 
-    # train_dataset = NaiveDataset(TRAIN_DATA_PATH, TRAIN_LABELS_PATH, num_examples = NUM_TRAIN)
-    # train_idx, val_idx = splitIndices(train_dataset, config, shuffle = True)
+    # Datasets
+    train_dataset = NaiveDataset(TRAIN_DATA_PATH, TRAIN_LABELS_PATH, num_examples = NUM_TRAIN, transforms = None)
+    train_idx, val_idx = splitIndices(train_dataset, config, shuffle = True)
 
-    # train_sampler = SubsetRandomSampler(train_idx)
-    # val_sampler = SubsetRandomSampler(val_idx)
 
-    # train_loader = DataLoader(train_dataset, batch_size = config.batch_size, num_workers = 4, sampler = train_sampler)
-    # val_loader = DataLoader(train_dataset, batch_size = config.batch_size, num_workers = 1, sampler = val_sampler)
+    weights = UpsamplingWeights(train_dataset)
+
+    train_sampler = WeightedRandomSampler(weights = weights[train_idx], replacement = True, num_samples = config.num_train)
+    val_sampler = SubsetRandomSampler(val_idx)
+
+
+    # Loaders
+    train_loader = DataLoader(train_dataset, batch_size = config.batch_size, num_workers = 4, sampler = train_sampler)
+    val_loader = DataLoader(train_dataset, batch_size = config.batch_size, num_workers = 1, sampler = val_sampler)
     
-    # config.train_loader = train_loader
-    # config.val_loader = val_loader
+    config.train_loader = train_loader
+    config.val_loader = val_loader
     
     #get test data
     test_dataset = NaiveDataset(TEST_DATA_PATH, TEST_LABELS_PATH)
@@ -59,11 +66,14 @@ def main():
     # Create Model
     model = createModel(config)
 
+    # Init Weights
+    model.apply(initialize_weights)
+
     # Train and Eval Model
     results = train(model, config)
-    #visualize.plot_results(results, config)
+    visualize.plot_results(results, config)
 
-    make_predictions = True
+    make_predictions = False
     if make_predictions:
       predict(model, config, test_loader, dataset = "test")
       #predict(model, config, train_loader, dataset = "train")

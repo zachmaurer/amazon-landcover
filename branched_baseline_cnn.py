@@ -87,7 +87,7 @@ def randomTranspose(x):
 
 def main():
     # Get Config
-    args = parseConfig("Tanuj's Branched ConvNet Model")
+    args = parseConfig("Zach's Branched ConvNet Model")
     config = Config(args)
     config.log(config)
 
@@ -110,9 +110,8 @@ def main():
 
     weights = UpsamplingWeights(train_dataset)
 
-
     train_sampler = WeightedRandomSampler(weights = weights[train_idx], replacement = True, num_samples = config.num_train)
-    val_sampler = WeightedRandomSampler(weights = weights[val_idx], replacement = True, num_samples = config.num_val)
+    val_sampler = SubsetRandomSampler(val_idx)
 
 
     # Loaders
