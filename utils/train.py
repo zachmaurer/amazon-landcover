@@ -8,7 +8,7 @@ from sklearn.preprocessing import MultiLabelBinarizer
 
 from sklearn.metrics import fbeta_score
 import numpy as np
-from .model import loadModel, countParams, checkpointModel, softmargin_jaccard_loss
+from .model import loadModel, countParams, checkpointModel, softmargin_jaccard_loss_2
 from utils.constants import LABEL_LIST, LABEL_WEIGHTS, THRESHOLDS
 import pandas as pd
 import os
@@ -209,7 +209,8 @@ def train(model, config, loss_fn = None, optimizer = None, weight_decay = 0, lr_
             x_var = Variable(x.type(config.dtype))
             y_var = Variable(y.type(config.dtype)) # removed .long() ?
             scores = model(x_var)            
-            loss = loss_fn(scores, y_var)
+            loss = softmargin_jaccard_loss_2(loss_fn, scores, y_var)
+            #loss = loss_fn(scores, y_var)
             loss_history.append(loss.data[0])
             loss_total += loss.data[0]
 

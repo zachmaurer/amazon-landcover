@@ -4,10 +4,18 @@ import torch
 from .constants import BEST_MODEL_FILENAME
 
 
-def softmargin_jaccard_loss(loss, scores, labels):
+def softmargin_jaccard_loss_1(loss, scores, labels):
         margin_loss = loss(scores, labels)
         jaccard = (scores * labels).sum(1) / (labels.sum(1) + scores.sum(1) - (scores * labels).sum(1))
-        jaccard = jaccard.mean().log()
+        jaccard = torch.log(jaccard.mean() + 1e-5)
+        print(jaccard)
+        return margin_loss - jaccard
+
+def softmargin_jaccard_loss_2(loss, scores, labels):
+        margin_loss = loss(scores, labels)
+        jaccard = (scores * labels).norm(2, dim = 1) / (labels.norm(2, dim = 1).pow(2) + scores.norm(2, dim = 1).pow(2) - (scores * labels).norm(2, dim = 1))
+        jaccard = (1.0 - jaccard + 1e-7).mean().log()
+        print(jaccard)
         return margin_loss - jaccard
 
 
