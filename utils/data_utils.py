@@ -33,6 +33,7 @@ def splitIndices(dataset, config, shuffle = True):
         num_val = length - config.num_train
         val = indices[0:num_val]    
         train = indices[num_val:]
+        config.num_val = len(val)
     return train, val
 
 

@@ -108,10 +108,10 @@ def main():
 
 
     weights = UpsamplingWeights(train_dataset)
-    print(weights.shape)
 
-    train_sampler = WeightedRandomSampler(train_idx)
-    val_sampler = WeightedRandomSampler(val_idx)
+
+    train_sampler = WeightedRandomSampler(weights = weights[train_idx], replacement = False, num_samples = config.num_train)
+    val_sampler = WeightedRandomSampler(weights = weights[val_idx], replacement = False, num_samples = config.num_val)
 
 
     # Loaders
