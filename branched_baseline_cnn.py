@@ -135,7 +135,9 @@ def main():
 
 
     # Train and Eval Model
-    results = train(model, config)
+    #results = train(model, config)
+    results = train(model, config, lr_decay = 0.001)
+    #results = train(model, config, lr_decay = 0.001, weight_decay = 0.0005)
     visualize.plot_results(results, config)
 
     make_predictions = False

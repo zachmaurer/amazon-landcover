@@ -158,12 +158,13 @@ def check_per_class_accuracy(model, config, loader, label = ""):
 #   model: the model object
 #   loader: DataLoader in pytorch
 #  
-def train(model, config, loss_fn = None, optimizer = None):
+def train(model, config, loss_fn = None, optimizer = None, weight_decay = 0, lr_decay = 0):
     if not loss_fn:
         loss_fn = nn.MultiLabelSoftMarginLoss(weight = None).type(config.dtype) # TODO: should the loss function run on the CPU or GPU?
     if not optimizer:
-        optimizer = optim.Adam(model.parameters(), lr = config.lr) 
+        optimizer = optim.Adam(model.parameters(), lr = config.lr, weight_decay = weight_decay) 
 
+    lr = config.lr
     best_f2 = 0.0
     loss_history = [] # per iteration
     train_f2_history = []
@@ -186,7 +187,7 @@ def train(model, config, loss_fn = None, optimizer = None):
 
     model.train()
     for epoch in range(config.epochs):
-        config.log('\nStarting epoch %d / %d' % (epoch + 1, config.epochs))
+        config.log('\nStarting epoch %d / %d with learning rate: %.3E' % (epoch + 1, config.epochs, lr))
         loss_total = 0.0
         grad_magnitude = 0.0
         for t, (x, _, y) in enumerate(config.train_loader):
@@ -199,15 +200,15 @@ def train(model, config, loss_fn = None, optimizer = None):
             loss_total += loss.data[0]
 
             # Evaluate on train and val sets
-            if config.eval_every and (t + 1) % config.eval_every == 0:
-                if config.train_loader:
-                    f2_score(model, config, config.train_loader, "train")
-                    check_all_or_none_accuracy(model, config, config.train_loader, "train")
-                    check_global_recall(model, config, config.train_loader, "train")
-                if config.val_loader:
-                    f2_score(model, config, config.val_loader, "val")
-                    check_all_or_none_accuracy(model, config, config.val_loader, "val")
-                    check_global_recall(model, config, config.val_loader, "val")
+            # if config.eval_every and (t + 1) % config.eval_every == 0:
+            #     if config.train_loader:
+            #         f2_score(model, config, config.train_loader, "train")
+            #         check_all_or_none_accuracy(model, config, config.train_loader, "train")
+            #         check_global_recall(model, config, config.train_loader, "train")
+            #     if config.val_loader:
+            #         f2_score(model, config, config.val_loader, "val")
+            #         check_all_or_none_accuracy(model, config, config.val_loader, "val")
+            #         check_global_recall(model, config, config.val_loader, "val")
                              
             # Backprop
             optimizer.zero_grad()
@@ -222,7 +223,9 @@ def train(model, config, loss_fn = None, optimizer = None):
                 #grad_magnitude = [(x.grad.data.sum(), torch.numel(x.grad.data)) for x in model.parameters() if x.grad.data.sum() != 0.0]
                 #grad_magnitude = sum([abs(x[0]) for x in grad_magnitude]) #/ sum([x[1] for x in grad_magnitude])
                 config.log('t = %d, avg_loss = %.4f, grad_mag = %.4f' % (t + 1, loss_total / (t+1), grad_magnitude / (t+1)))
-
+            if lr_decay:
+                lr = lr * 1/(1 + lr_decay * epoch)
+                optimizer = optim.Adam(model.parameters(), lr = lr, weight_decay = weight_decay) 
             gc.collect()
 
         config.log("Finished Epoch {}/{}".format(epoch + 1, config.epochs))
