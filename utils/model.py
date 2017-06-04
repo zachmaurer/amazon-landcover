@@ -11,11 +11,14 @@ def softmargin_jaccard_loss_1(loss, scores, labels):
         print(jaccard)
         return margin_loss - jaccard
 
-def softmargin_jaccard_loss_2(loss, scores, labels):
+def softmargin_jaccard_loss_2(loss, scores, labels, config):
         margin_loss = loss(scores, labels)
         scores = scores.sigmoid() > 0.5
         #print(scores.size())
-        scores = scores.type(torch.cuda.FloatTensor)
+        if config.use_gpu:
+            scores = scores.type(torch.cuda.FloatTensor)
+        else:
+            scores = scores.type(torch.FloatTensor)
         jaccard = (scores * labels).norm(2, dim = 1) / (labels.norm(2, dim = 1).pow(2) + scores.norm(2, dim = 1).pow(2) - (scores * labels).norm(2, dim = 1))
         jaccard = (1.0 - jaccard + 1e-7).mean()
         #print(jaccard)
