@@ -61,6 +61,7 @@ class BranchedCNN(nn.Module):
       self.conv1_conv2_short = nn.Sequential(
           Conv_BN_Relu(64, 256, kernel_size = 1, stride = 1, padding = 0),
           nn.UpsamplingNearest2d(scale_factor = 2),
+          Conv_BN_Relu(256, 256, kernel_size = 1, stride = 1, padding = 0),
           nn.UpsamplingNearest2d(scale_factor = 2),
         )
 

@@ -57,7 +57,7 @@ LABEL_MAP = {
         16: 'water'
     }
 
-
+# From Kaggle
 # THRESHOLDS = [
 #         0.245,
 #         0.1375,
@@ -78,6 +78,7 @@ LABEL_MAP = {
 #         0.205
 #     ]
 
+# Average Average Probabilities
 THRESHOLDS = [0.268406,    
                             0.0144748,     
                             0.0254243,    

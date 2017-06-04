@@ -3,6 +3,15 @@ import os
 import torch
 from .constants import BEST_MODEL_FILENAME
 
+
+def softmargin_jaccard_loss(loss, scores, labels):
+        margin_loss = loss(scores, labels)
+        jaccard = (scores * labels).sum(1) / (labels.sum(1) + scores.sum(1) - (scores * labels).sum(1))
+        jaccard = jaccard.mean().log()
+        return margin_loss + jaccard
+
+
+
 def countParams(model, config):
     num_params = sum([p.data.nelement() for p in model.parameters()])
     config.log('Number of model parameters: {}\n'.format(num_params))
