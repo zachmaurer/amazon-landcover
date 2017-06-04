@@ -42,20 +42,29 @@ class BranchedCNN(nn.Module):
         Conv_BN_Relu(64, 1, kernel_size = 1, stride = 1, padding = 0),
         nn.MaxPool2d(4, stride=2),
         Flatten(),
-        nn.Linear(15876, NUM_CLASSES)
+        nn.Dropout(0.5),
+        nn.Linear(15876, 2400),
+        nn.ReLU(),
+        nn.Linear(2400, NUM_CLASSES)
       )
 
       self.conv1_decoder = nn.Sequential(
         Conv_BN_Relu(64, 1, kernel_size = 1, stride = 1, padding = 0),
         Flatten(),
-        nn.Linear(3844, NUM_CLASSES)
+        nn.Dropout(0.5),
+        nn.Linear(3844, 2400),
+        nn.ReLU(),
+        nn.Linear(2400, NUM_CLASSES)
       )
 
       self.conv2_decoder = nn.Sequential(
         nn.MaxPool2d(2, stride=2),
         Conv_BN_Relu(256, 3, kernel_size = 1, stride = 1, padding = 0),
         Flatten(),
-        nn.Linear(46128, NUM_CLASSES)
+        nn.Dropout(),
+        nn.Linear(46128, 2400),
+        nn.ReLU(),
+        nn.Linear(2400, NUM_CLASSES)
       )
 
       self.conv1_conv2_short = nn.Sequential(
