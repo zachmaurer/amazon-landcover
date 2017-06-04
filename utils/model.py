@@ -8,7 +8,7 @@ def softmargin_jaccard_loss(loss, scores, labels):
         margin_loss = loss(scores, labels)
         jaccard = (scores * labels).sum(1) / (labels.sum(1) + scores.sum(1) - (scores * labels).sum(1))
         jaccard = jaccard.mean().log()
-        return margin_loss + jaccard
+        return margin_loss - jaccard
 
 
 

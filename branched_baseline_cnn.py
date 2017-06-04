@@ -111,8 +111,8 @@ def main():
     weights = UpsamplingWeights(train_dataset)
 
 
-    train_sampler = WeightedRandomSampler(weights = weights[train_idx], replacement = False, num_samples = config.num_train)
-    val_sampler = WeightedRandomSampler(weights = weights[val_idx], replacement = False, num_samples = config.num_val)
+    train_sampler = WeightedRandomSampler(weights = weights[train_idx], replacement = True, num_samples = config.num_train)
+    val_sampler = WeightedRandomSampler(weights = weights[val_idx], replacement = True, num_samples = config.num_val)
 
 
     # Loaders
@@ -137,8 +137,8 @@ def main():
 
     # Train and Eval Model
     #results = train(model, config)
-    #results = train(model, config, lr_decay = 0.0001)
-    results = train(model, config, lr_decay = 0.0001, weight_decay = 0.0005)
+    results = train(model, config, lr_decay = 0.0001)
+    #results = train(model, config, lr_decay = 0.0001, weight_decay = 0.0005)
     visualize.plot_results(results, config)
 
     make_predictions = False
