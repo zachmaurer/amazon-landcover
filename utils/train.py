@@ -234,7 +234,6 @@ def train(model, config, loss_fn = None, optimizer = None, weight_decay = 0, lr_
                 config.log('t = %d, avg_loss = %.4f, grad_mag = %.4f' % (t + 1, loss_total / (t+1), grad_magnitude / (t+1)))
             if lr_decay:
                 lr = lr * 1/(1 + lr_decay * epoch)
-                print(lr)
                 optimizer = optim.Adam(model.parameters(), lr = lr, weight_decay = weight_decay) 
             gc.collect()
 
