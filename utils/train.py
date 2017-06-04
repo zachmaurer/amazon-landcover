@@ -12,6 +12,7 @@ from .model import loadModel, countParams, checkpointModel
 from utils.constants import LABEL_LIST, LABEL_WEIGHTS
 import pandas as pd
 import os
+from prettytable import PrettyTable
 
 
 #TBD - feed in a single tensor into the get_label_strings_from_tensor, rather than doing it per batch
@@ -128,11 +129,10 @@ def eval_performance(model, config, loader, f2 = True, recall = True, acc = True
     model.train()
     class_probabilities /= num_samples_f2
     class_probabilities = class_probabilities.cpu().numpy()
-    class_prob_str = "\n"
+    table = PrettyTable(['Class', 'Average Probability'])
     for i, x in enumerate(LABEL_LIST):
-        class_prob_str += "%s : %.4f \t" % (x, float(class_probabilities[0, i]))
-        if (i+1) % 3 == 0: class_prob_str += "\n"
-    config.log(class_prob_str)
+        table.add_row([x, class_probabilities[0, i]])
+    config.log(table)
 
     return f2_score, recall, acc
 

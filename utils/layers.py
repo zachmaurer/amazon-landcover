@@ -13,8 +13,9 @@ class Conv_BN_Relu(nn.Module):
       super(Conv_BN_Relu, self).__init__()
       self.layer = nn.Sequential(
                         nn.Conv2d(in_channels, out_channels, kernel_size = kernel_size, stride = stride, padding = padding),
-                        nn.ReLU(inplace=True),
-                        nn.BatchNorm2d(out_channels, eps=1e-05, momentum=0.1, affine=True)
+                        nn.BatchNorm2d(out_channels, eps=1e-05, momentum=0.1, affine=True),
+                        nn.LeakyReLU(),
+                        #nn.ReLU(inplace=True),
                     )
     def forward(self, x):
       return self.layer(x)
