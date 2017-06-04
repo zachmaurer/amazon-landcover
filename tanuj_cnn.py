@@ -8,6 +8,9 @@ from utils import Config, parseConfig
 from utils.layers import Flatten, initialize_weights
 from utils.constants import NUM_CLASSES, TRAIN_DATA_PATH, TRAIN_LABELS_PATH, NUM_TRAIN, TEST_DATA_PATH, TEST_LABELS_PATH
 from utils import visualize
+from torchvision import transforms
+from random import randint
+import numpy as np
 
 def createModel(config):
     model = nn.Sequential(
@@ -34,6 +37,10 @@ def createModel(config):
       model = model.cuda()
     return model
 
+def randomTranspose(x):
+  k = randint(0,4)
+  x = np.rot90(x, k = k)
+  return x
 
 def main():
     # Get Config
@@ -41,8 +48,22 @@ def main():
     config = Config(args)
     config.log(config)
 
+
+    # Transformations
+    size = 256
+    transformations = transforms.Compose([ 
+                                  transforms.Scale(size+5),
+                                  transforms.RandomCrop(size),
+                                  transforms.RandomHorizontalFlip(),
+                                  transforms.Lambda(lambda x: randomTranspose(np.array(x))),
+                                  transforms.Lambda(lambda x: np.array(x)[:,:,:3]),                                      
+                                  transforms.ToTensor(),
+                              ])
+
+
+
     # Datasets
-    train_dataset = NaiveDataset(TRAIN_DATA_PATH, TRAIN_LABELS_PATH, num_examples = NUM_TRAIN, transforms = None)
+    train_dataset = NaiveDataset(TRAIN_DATA_PATH, TRAIN_LABELS_PATH, num_examples = NUM_TRAIN, transforms = transformations)
     train_idx, val_idx = splitIndices(train_dataset, config, shuffle = True)
 
 
@@ -70,7 +91,7 @@ def main():
     model.apply(initialize_weights)
 
     # Train and Eval Model
-    results = train(model, config)
+    results = train(model, config, lr_decay = 0.0001, weight_decay = 0.0005)
     visualize.plot_results(results, config)
 
     make_predictions = False
