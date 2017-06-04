@@ -1,16 +1,16 @@
-import torch
-from torch import nn, FloatTensor
-from torch.utils.data import DataLoader 
-from torch.autograd import Variable
+from torchvision import transforms
+from torch import nn
+from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 
 from utils import train, predict
 from utils import NaiveDataset, splitIndices
 from utils import Config, parseConfig
-from utils.layers import Flatten, Conv_BN_Relu
+from utils.layers import Flatten, Conv_BN_Relu, initialize_weights
 from utils.constants import NUM_CLASSES, TRAIN_DATA_PATH, TRAIN_LABELS_PATH, NUM_TRAIN, TEST_DATA_PATH, TEST_LABELS_PATH
 from utils import visualize
-
+from random import randint
+import numpy as np
 
 
 class BranchedCNN(nn.Module):
@@ -64,7 +64,7 @@ class BranchedCNN(nn.Module):
           nn.UpsamplingNearest2d(scale_factor = 2),
           nn.UpsamplingNearest2d(scale_factor = 2),
         )
-      
+
     def forward(self, x):
       feats = self.stem(x)
       conv1 = self.conv1(feats)
@@ -80,7 +80,10 @@ class BranchedCNN(nn.Module):
 
 
 
-
+def randomTranspose(x):
+  k = randint(0,4)
+  x = np.rot90(x, k = k)
+  return x
 
 def main():
     # Get Config
@@ -88,12 +91,26 @@ def main():
     config = Config(args)
     config.log(config)
 
-    train_dataset = NaiveDataset(TRAIN_DATA_PATH, TRAIN_LABELS_PATH, num_examples = NUM_TRAIN)
+    # Transformations
+    size = 256
+    transformations = transforms.Compose([ 
+                                  transforms.Scale(size+5),
+                                  transforms.RandomCrop(size),
+                                  transforms.RandomHorizontalFlip(),
+                                  transforms.Lambda(lambda x: randomTranspose(np.array(x))),
+                                  transforms.Lambda(lambda x: np.array(x)[:,:,:3]),                                      
+                                  transforms.ToTensor(),
+                              ])
+
+
+    # Datasets
+    train_dataset = NaiveDataset(TRAIN_DATA_PATH, TRAIN_LABELS_PATH, num_examples = NUM_TRAIN, transforms = transformations)
     train_idx, val_idx = splitIndices(train_dataset, config, shuffle = True)
 
     train_sampler = SubsetRandomSampler(train_idx)
     val_sampler = SubsetRandomSampler(val_idx)
 
+    # Loaders
     train_loader = DataLoader(train_dataset, batch_size = config.batch_size, num_workers = 4, sampler = train_sampler)
     val_loader = DataLoader(train_dataset, batch_size = config.batch_size, num_workers = 1, sampler = val_sampler)
     
@@ -106,6 +123,12 @@ def main():
     
     # Create Model
     model = BranchedCNN(config)
+    if config.use_gpu:
+      model = model.cuda()
+
+    # Init Weights
+    model.apply(initialize_weights)
+
 
     # Train and Eval Model
     results = train(model, config)
@@ -114,8 +137,8 @@ def main():
     make_predictions = False
     if make_predictions:
       predict(model, config, test_loader, dataset = "test")
-      #predict(model, config, train_loader, dataset = "train")
-      #predict(model, config, val_loader, dataset = "val")
+      predict(model, config, train_loader, dataset = "train")
+      predict(model, config, val_loader, dataset = "val")
 
 if __name__ == '__main__':
     main()

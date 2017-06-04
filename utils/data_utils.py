@@ -47,12 +47,18 @@ class NaiveDataset(Dataset):
     """
     def load_image(self, idx):
         image_name = self.labels_df['image_name'][idx]
-        im = Image.open(self.data_path + image_name + '.jpg')
-        im = np.array(im)[:,:,:3]
-        im = np.reshape(im,(im.shape[2],im.shape[0],im.shape[1]))
-        return torch.from_numpy(im), image_name
+        if self.transforms:
+            im = Image.open(self.data_path + image_name + '.jpg')
+            im = self.transforms(im)
+            return im, image_name
+        else:
+            im = Image.open(self.data_path + image_name + '.jpg')
+            im = np.array(im)[:,:,:3]
+            im = np.reshape(im,(im.shape[2],im.shape[0],im.shape[1]))
+            #print(im.shape)
+            return torch.from_numpy(im), image_name
     
-    def __init__(self, data_path, labels_path, num_examples=None):
+    def __init__(self, data_path, labels_path, num_examples = None, transforms = None):
         self.labels_df = pd.read_csv(labels_path)
         if num_examples is None:
             self.num_examples = self.labels_df.shape[0]
@@ -66,6 +72,7 @@ class NaiveDataset(Dataset):
         self.labels_tensor = torch.from_numpy(self.mlb.fit_transform(labels_words))
         
         self.data_path = data_path
+        self.transforms = transforms
 
     def __getitem__(self, idx):
         data_tensor, image_name = self.load_image(idx)
