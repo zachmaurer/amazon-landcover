@@ -9,7 +9,7 @@ from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.metrics import fbeta_score
 import numpy as np
 from .model import loadModel, countParams, checkpointModel
-from utils.constants import LABEL_LIST, LABEL_WEIGHTS
+from utils.constants import LABEL_LIST, LABEL_WEIGHTS, THRESHOLDS
 import pandas as pd
 import os
 from prettytable import PrettyTable
@@ -91,6 +91,8 @@ def get_label_strings_from_tensor(pred_labels_tensor):
 #   loader: DataLoader in pytorch
 #  
 def eval_performance(model, config, loader, f2 = True, recall = True, acc = True, label = ""):
+    thresholds = torch.FloatTensor(THRESHOLDS).expand(config.batch_size, 17).cuda() if config.use_gpu else torch.FloatTensor(THRESHOLDS).expand(config.batch_size, 17)
+    thresholds = Variable(thresholds)
     sum_f2 = 0.0
     num_samples_f2 = 0
     num_correct_recall = 0
@@ -106,7 +108,8 @@ def eval_performance(model, config, loader, f2 = True, recall = True, acc = True
         #scores = expit(scores.data.cpu().numpy())
         scores = nn.functional.sigmoid(scores)
         class_probabilities += scores.data.sum(0)
-        preds = scores > 0.5
+        preds = scores > thresholds
+        #preds = scores > 0.5
         if f2:
             sum_f2 += fbeta_score(preds.data.cpu().numpy(), y.cpu().numpy(), beta=2, average='samples')*y.size(0)
             num_samples_f2 += y.size(0)
