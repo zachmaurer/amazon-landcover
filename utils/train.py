@@ -176,8 +176,9 @@ def train(model, config, loss_fn = None, optimizer = None, weight_decay = 0, lr_
     if not loss_fn:
         loss_fn = nn.MultiLabelSoftMarginLoss(weight = None).type(config.dtype) # TODO: should the loss function run on the CPU or GPU?
     if not optimizer:
-        optimizer = optim.Adam(model.parameters(), lr = config.lr, weight_decay = weight_decay) 
+        optimizer = optim.SGD(model.parameters(), lr = config.lr, momentum = 0.9, weight_decay = weight_decay) 
 
+    step_1, step_2, step_3 = False, False, False
     lr = config.lr
     best_f2 = 0.0
     loss_history = [] # per iteration
@@ -213,18 +214,7 @@ def train(model, config, loss_fn = None, optimizer = None, weight_decay = 0, lr_
             #loss = loss_fn(scores, y_var)
             loss_history.append(loss.data[0])
             loss_total += loss.data[0]
-
-            # Evaluate on train and val sets
-            # if config.eval_every and (t + 1) % config.eval_every == 0:
-            #     if config.train_loader:
-            #         f2_score(model, config, config.train_loader, "train")
-            #         check_all_or_none_accuracy(model, config, config.train_loader, "train")
-            #         check_global_recall(model, config, config.train_loader, "train")
-            #     if config.val_loader:
-            #         f2_score(model, config, config.val_loader, "val")
-            #         check_all_or_none_accuracy(model, config, config.val_loader, "val")
-            #         check_global_recall(model, config, config.val_loader, "val")
-                             
+         
             # Backprop
             optimizer.zero_grad()
             loss.backward()
@@ -238,9 +228,20 @@ def train(model, config, loss_fn = None, optimizer = None, weight_decay = 0, lr_
                 #grad_magnitude = [(x.grad.data.sum(), torch.numel(x.grad.data)) for x in model.parameters() if x.grad.data.sum() != 0.0]
                 #grad_magnitude = sum([abs(x[0]) for x in grad_magnitude]) #/ sum([x[1] for x in grad_magnitude])
                 config.log('t = %d, avg_loss = %.4f, grad_mag = %.4f' % (t + 1, loss_total / (t+1), grad_magnitude / (t+1)))
-            if lr_decay:
-                lr = lr * 1/(1 + lr_decay * epoch)
-                optimizer = optim.Adam(model.parameters(), lr = lr, weight_decay = weight_decay) 
+        if epoch >= 10 and not step_1: 
+            lr = 1e-1 * lr
+            optimizer = optim.SGD(model.parameters(), lr = lr, momentum = 0.9, weight_decay = weight_decay) 
+            step_1 = True
+        if epoch >= 20 and not step_2:
+            lr = 1e-2 * lr
+            optimizer = optim.SGD(model.parameters(), lr = lr, momentum = 0.9, weight_decay = weight_decay) 
+            step_2 = True
+        if epoch >= 25 and not step_3:
+            lr = lr / 2.0
+            optimizer = optim.SGD(model.parameters(), lr = lr, momentum = 0.9, weight_decay = weight_decay) 
+            step_3 = True
+
+
             gc.collect()
 
         config.log("Finished Epoch {}/{}".format(epoch + 1, config.epochs))

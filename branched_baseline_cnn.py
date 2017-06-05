@@ -123,9 +123,10 @@ def main():
     train_idx, val_idx = splitIndices(train_dataset, config, shuffle = True)
 
 
-    weights = UpsamplingWeights(train_dataset)
+    #weights = UpsamplingWeights(train_dataset)
 
-    train_sampler = WeightedRandomSampler(weights = weights[train_idx], replacement = True, num_samples = config.num_train)
+    #train_sampler = WeightedRandomSampler(weights = weights[train_idx], replacement = True, num_samples = config.num_train)
+    train_sampler = SubsetRandomSampler(train_idx)
     val_sampler = SubsetRandomSampler(val_idx)
 
 
@@ -152,7 +153,7 @@ def main():
     # Train and Eval Model
     #results = train(model, config)
     #results = train(model, config, lr_decay = 0.00001)
-    results = train(model, config, lr_decay = 0.00001, weight_decay = 0.0005)
+    results = train(model, config, weight_decay = 0.0005)
     visualize.plot_results(results, config)
 
     make_predictions = False

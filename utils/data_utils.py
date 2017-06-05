@@ -64,11 +64,11 @@ class NaiveDataset(Dataset):
         image_name = self.labels_df['image_name'][idx]
         if self.transforms:
             im = Image.open(self.data_path + image_name + '.jpg')
-            im = self.transforms(im)
+            im = self.transforms(im) / 255.0
             return im, image_name
         else:
             im = Image.open(self.data_path + image_name + '.jpg')
-            im = np.array(im)[:,:,:3]
+            im = np.array(im)[:,:,:3] / 255.0
             im = np.reshape(im,(im.shape[2],im.shape[0],im.shape[1]))
             #print(im.shape)
             return torch.from_numpy(im), image_name
