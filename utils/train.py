@@ -41,7 +41,7 @@ def predict(model, config, loader, dataset = ""):
             if t%print_every == 0:
                 print(t)
             x_var = Variable(x.type(config.dtype), volatile=True)
-            scores = model(x_var)
+            scores, _ = model(x_var)
             preds_var.data[t*loader.batch_size:t*loader.batch_size+x.size()[0]] = scores.data #tbd - verify this is good
             labels_var.data[t*loader.batch_size:t*loader.batch_size+x.size()[0]] = y
             image_list.extend(image_names)
@@ -104,7 +104,7 @@ def eval_performance(model, config, loader, f2 = True, recall = True, acc = True
     for x, _, y in loader:
         y = y.type(torch.cuda.ByteTensor) if config.use_gpu else y.type(torch.ByteTensor)
         x_var = Variable(x.type(config.dtype), volatile=True)
-        scores = model(x_var)
+        scores, _ = model(x_var)
         #scores = expit(scores.data.cpu().numpy())
         scores = nn.functional.sigmoid(scores)
         if print_probabilities:
@@ -209,8 +209,8 @@ def train(model, config, loss_fn = None, optimizer = None, weight_decay = 0, lr_
             x_var = Variable(x.type(config.dtype))
             y_var = Variable(y.type(config.dtype)) # removed .long() ?
             scores = model(x_var)            
-            loss = softmargin_jaccard_loss_2(loss_fn, scores, y_var, config)
-            #loss = loss_fn(scores, y_var)
+            #loss = softmargin_jaccard_loss_2(loss_fn, scores, y_var, config)
+            loss = loss_fn(scores[0], y_var)
             loss_history.append(loss.data[0])
             loss_total += loss.data[0]
 
@@ -230,8 +230,9 @@ def train(model, config, loss_fn = None, optimizer = None, weight_decay = 0, lr_
             loss.backward()
             optimizer.step()
 
-            grad_magnitude_t = [(x.grad.data.sum(), torch.numel(x.grad.data)) for x in model.parameters() if x.grad.data.sum() != 0.0]
-            grad_magnitude += sum([abs(x[0]) for x in grad_magnitude_t]) #/ sum([x[1] for x in grad_magnitude])
+            #grad_magnitude_t = [(x.grad.data.sum(), torch.numel(x.grad.data)) for x in model.parameters() if x.grad.data.sum() != 0.0]
+            #grad_magnitude += sum([abs(x[0]) for x in grad_magnitude_t]) #/ sum([x[1] for x in grad_magnitude])
+            grad_magnitude = -1
 
             # Print Loss
             if config.print_every and (t + 1) % config.print_every == 0:
