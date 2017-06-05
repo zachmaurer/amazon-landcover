@@ -42,32 +42,35 @@ class BranchedCNN(nn.Module):
         Conv_BN_Relu(128, 1, kernel_size = 1, stride = 1, padding = 0),
         nn.MaxPool2d(4, stride=2),
         Flatten(),
-        nn.Dropout(0.7),
-        nn.Linear(16129, 2400),
+        nn.Dropout(0.5),
+        nn.Linear(3025, 1024),
+        nn.BatchNorm1d(1024, eps=1e-05, momentum=0.1, affine=True),
         nn.ReLU(),
         nn.Dropout(0.2),
-        nn.Linear(2400, NUM_CLASSES)
+        nn.Linear(1024, NUM_CLASSES)
       )
 
       self.conv1_decoder = nn.Sequential(
         Conv_BN_Relu(64, 1, kernel_size = 1, stride = 1, padding = 0),
         Flatten(),
-        nn.Dropout(0.7),
-        nn.Linear(3969, 2400),
+        nn.Dropout(0.5),
+        nn.Linear(729, 512),
+        nn.BatchNorm1d(512, eps=1e-05, momentum=0.1, affine=True),
         nn.ReLU(),
         nn.Dropout(0.2),
-        nn.Linear(2400, NUM_CLASSES)
+        nn.Linear(512, NUM_CLASSES)
       )
 
       self.conv2_decoder = nn.Sequential(
         nn.MaxPool2d(2, stride=2),
         Conv_BN_Relu(256, 3, kernel_size = 1, stride = 1, padding = 0),
         Flatten(),
-        nn.Dropout(0.7),
-        nn.Linear(47628, 2400),
+        nn.Dropout(0.5),
+        nn.Linear(8748, 1024),
+        nn.BatchNorm1d(1024, eps=1e-05, momentum=0.1, affine=True),
         nn.ReLU(),
         nn.Dropout(0.2),
-        nn.Linear(2400, NUM_CLASSES)
+        nn.Linear(1024, NUM_CLASSES)
       )
 
       self.conv1_conv2_short = nn.Sequential(
@@ -104,7 +107,7 @@ def main():
     config.log(config)
 
     # Transformations
-    size = 256
+    size = 112
     transformations = transforms.Compose([ 
                                   transforms.Scale(size+5),
                                   transforms.RandomCrop(size),
@@ -149,7 +152,7 @@ def main():
     # Train and Eval Model
     #results = train(model, config)
     #results = train(model, config, lr_decay = 0.00001)
-    results = train(model, config, lr_decay = 0.00005, weight_decay = 0.0005)
+    results = train(model, config, lr_decay = 0.00001, weight_decay = 0.0005)
     visualize.plot_results(results, config)
 
     make_predictions = False

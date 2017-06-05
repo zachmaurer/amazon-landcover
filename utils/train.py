@@ -110,7 +110,7 @@ def eval_performance(model, config, loader, f2 = True, recall = True, acc = True
         if print_probabilities:
             class_probabilities += scores.data.sum(0)
         #preds = scores > thresholds.expand(scores.size(0), 17)
-        preds = scores > 0.235
+        preds = scores > 0.2
         if f2:
             sum_f2 += fbeta_score(preds.data.cpu().numpy(), y.cpu().numpy(), beta=2, average='samples')*y.size(0)
             num_samples_f2 += y.size(0)
