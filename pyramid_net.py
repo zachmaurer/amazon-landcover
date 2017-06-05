@@ -240,10 +240,7 @@ class PyNet_10(nn.Module):
         logit4u = self.cls4u(flat4u).unsqueeze(2)
 
 
-        logit = torch.cat((
-                    logit2d,logit3d,logit4d,logit5d,
-            logit1u,logit2u,logit3u,logit4u,
-        ),dim=2)
+        logit = torch.cat((logit2d,logit3d,logit4d,logit5d,logit1u,logit2u,logit3u,logit4u) , 2)
 
         logit = F.dropout(logit, p=0.15,training=self.training)
         logit = logit.sum(2)
@@ -281,9 +278,10 @@ def main():
     train_idx, val_idx = splitIndices(train_dataset, config, shuffle = True)
 
 
-    weights = UpsamplingWeights(train_dataset)
+    #weights = UpsamplingWeights(train_dataset)
 
-    train_sampler = WeightedRandomSampler(weights = weights[train_idx], replacement = True, num_samples = config.num_train)
+    #train_sampler = WeightedRandomSampler(weights = weights[train_idx], replacement = True, num_samples = config.num_train)
+    train_sampler = SubsetRandomSampler(train_idx)
     val_sampler = SubsetRandomSampler(val_idx)
 
 
