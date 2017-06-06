@@ -165,10 +165,10 @@ def main():
     train_idx, val_idx = splitIndices(train_dataset, config, shuffle = True)
 
 
-    weights = UpsamplingWeights(train_dataset)
+    #weights = UpsamplingWeights(train_dataset)
 
-    train_sampler = WeightedRandomSampler(weights = weights[train_idx], replacement = True, num_samples = config.num_train)
-    #train_sampler = SubsetRandomSampler(train_idx)
+    #train_sampler = WeightedRandomSampler(weights = weights[train_idx], replacement = True, num_samples = config.num_train)
+    train_sampler = SubsetRandomSampler(train_idx)
     val_sampler = SubsetRandomSampler(val_idx)
 
 
