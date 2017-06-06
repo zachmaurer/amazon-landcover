@@ -11,16 +11,18 @@ from utils import Config, parseConfig
 from utils.layers import Flatten
 from utils.constants import NUM_CLASSES, TRAIN_DATA_PATH, TRAIN_LABELS_PATH, NUM_TRAIN, TEST_DATA_PATH, TEST_LABELS_PATH
 from utils import visualize
-
+import numpy as np
 
 Ndim, Cdim, Hdim, Wdim = 0, 1, 2, 3
 
 class ResNet(nn.Module):
   def __init__(self):
     super().__init__()
-    model_conv = torchvision.models.resnet50(pretrained=True)
+    model_conv = torchvision.models.resnet101(pretrained=True)
+    #layer4_params = model_conv.layer4.parameters()
     for param in model_conv.parameters():
-        param.requires_grad = False
+    #if param not in model_conv.layer4.parameters(): 
+      param.requires_grad = False
     num_ftrs = model_conv.fc.in_features
     model_conv.fc = nn.Linear(num_ftrs, NUM_CLASSES)
     self.classifier = model_conv
@@ -58,7 +60,7 @@ def main():
       model = model.cuda()
 
     # Train and Eval Model
-    optimizer_conv = optim.Adam(model.classifier.fc.parameters(), config.lr)
+    optimizer_conv = optim.Adam(model.classifier.fc.parameters(),  config.lr)
 
     results = train(model, config, optimizer=optimizer_conv)
     visualize.plot_results(results, config)

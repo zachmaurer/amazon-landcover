@@ -28,8 +28,8 @@ def predict(model, config, loader, dataset = ""):
         preds_var.data[t*loader.batch_size:t*loader.batch_size+x.size()[0]] = scores.data #tbd - verify this is good
         
     preds_var = nn.functional.sigmoid(preds_var)
-    preds_var[preds_var>0.5] = 1
-    preds_var[preds_var<=0.5] = 0
+    preds_var[preds_var>0.2] = 1
+    preds_var[preds_var<=0.2] = 0
     preds = get_label_strings_from_tensor(preds_var.data)
  
     subm = pd.DataFrame()
