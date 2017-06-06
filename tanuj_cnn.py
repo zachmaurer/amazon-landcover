@@ -28,10 +28,10 @@ def createModel(config):
       
                       # Aggregation Layers
                       Flatten(), # see above for explanation
-                      nn.Linear(7200, 2048), # affine layer
+                      nn.Linear(1152, 512), # affine layer
                       nn.ReLU(inplace = False),
                       #nn.Dropout(p=0.45, inplace = False), #don't use dropout until I overfit..
-                      nn.Linear(2048, NUM_CLASSES), # affine layer
+                      nn.Linear(512, NUM_CLASSES), # affine layer
             )
     if config.use_gpu:
       model = model.cuda()
@@ -50,7 +50,7 @@ def main():
 
 
     # Transformations
-    size = 256
+    size = 112
     transformations = transforms.Compose([ 
                                   transforms.Scale(size+5),
                                   transforms.RandomCrop(size),
