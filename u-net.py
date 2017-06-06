@@ -2,14 +2,15 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader 
 from torch.utils.data.sampler import SubsetRandomSampler
-
+from torchvision import transforms
+import numpy as np
 from utils import train, predict
 from utils import NaiveDataset, splitIndices
 from utils import Config, parseConfig
 from utils.layers import Flatten, initialize_weights
 from utils.constants import NUM_CLASSES, TRAIN_DATA_PATH, TRAIN_LABELS_PATH, NUM_TRAIN, TEST_DATA_PATH, TEST_LABELS_PATH
 from utils import visualize
-
+from random import randint
 
 # Architecture from "U-Net: Convolutional Networks for Biomedical Image Segmentation" (Ronneberger et al., 2015) 
 # Paper Link: https://arxiv.org/pdf/1505.04597.pdf
@@ -112,7 +113,7 @@ class UNet(nn.Module):
     # Output Layer
     self.out_conv = nn.Conv2d(self.filter_seq[0], 1, 3, padding =1)
     self.flatten = Flatten()
-    self.out_dense = nn.Linear(256**2, NUM_CLASSES)
+    self.out_dense = nn.Linear(4096, NUM_CLASSES)
 
   def forward(self, input):
     # Seg Net
@@ -136,7 +137,10 @@ class UNet(nn.Module):
     out = self.out_dense(out)
     return out
 
-
+def randomTranspose(x):
+  k = randint(0,4)
+  x = np.rot90(x, k = k)
+  return x
 
 def main():
     # Get Config
@@ -144,17 +148,40 @@ def main():
     config = Config(args)
     config.log(config)
 
-    train_dataset = NaiveDataset(TRAIN_DATA_PATH, TRAIN_LABELS_PATH, num_examples = NUM_TRAIN)
+    # Transformations
+    size = 64
+    transformations = transforms.Compose([ 
+                                  transforms.Scale(size+5),
+                                  transforms.RandomCrop(size),
+                                  transforms.RandomHorizontalFlip(),
+                                  transforms.Lambda(lambda x: randomTranspose(np.array(x))),
+                                  transforms.Lambda(lambda x: np.array(x)[:,:,:3]),                                      
+                                  transforms.ToTensor(),
+                              ])
+
+
+    # Datasets
+    train_dataset = NaiveDataset(TRAIN_DATA_PATH, TRAIN_LABELS_PATH, num_examples = NUM_TRAIN, transforms = transformations)
     train_idx, val_idx = splitIndices(train_dataset, config, shuffle = True)
 
+
+    #weights = UpsamplingWeights(train_dataset)
+
+    #train_sampler = WeightedRandomSampler(weights = weights[train_idx], replacement = True, num_samples = config.num_train)
     train_sampler = SubsetRandomSampler(train_idx)
     val_sampler = SubsetRandomSampler(val_idx)
 
-    train_loader = DataLoader(train_dataset, batch_size = config.batch_size, num_workers = 3, sampler = train_sampler)
+
+    # Loaders
+    train_loader = DataLoader(train_dataset, batch_size = config.batch_size, num_workers = 4, sampler = train_sampler)
     val_loader = DataLoader(train_dataset, batch_size = config.batch_size, num_workers = 1, sampler = val_sampler)
     
     config.train_loader = train_loader
     config.val_loader = val_loader
+    
+    #get test data
+    test_dataset = NaiveDataset(TEST_DATA_PATH, TEST_LABELS_PATH)
+    test_loader = DataLoader(test_dataset, batch_size = config.batch_size, shuffle = False, num_workers = 2)
 
     # Create Model
     model = UNet()
@@ -163,9 +190,10 @@ def main():
     model.apply(initialize_weights)
 
     # Train and Eval Model
-    results = train(model, config)
+    results = train(model, config, weight_decay = 0.0005)
     visualize.plot_results(results, config)
   
+
     # Evaluate Results
     test_dataset = NaiveDataset(TEST_DATA_PATH, TEST_LABELS_PATH, num_examples = 20)
     test_loader = DataLoader(test_dataset, batch_size = 10, shuffle = False, num_workers = 3)
