@@ -1,11 +1,11 @@
 import torch
 from torch import nn
 from torch.utils.data import DataLoader 
-from torch.utils.data.sampler import SubsetRandomSampler
+from torch.utils.data.sampler import SubsetRandomSampler, WeightedRandomSampler
 from torchvision import transforms
 import numpy as np
 from utils import train, predict
-from utils import NaiveDataset, splitIndices
+from utils import NaiveDataset, splitIndices, UpsamplingWeights
 from utils import Config, parseConfig
 from utils.layers import Flatten, initialize_weights
 from utils.constants import NUM_CLASSES, TRAIN_DATA_PATH, TRAIN_LABELS_PATH, NUM_TRAIN, TEST_DATA_PATH, TEST_LABELS_PATH
@@ -113,7 +113,7 @@ class UNet(nn.Module):
     # Output Layer
     self.out_conv = nn.Conv2d(self.filter_seq[0], 1, 3, padding =1)
     self.flatten = Flatten()
-    self.out_dense = nn.Linear(4096, NUM_CLASSES)
+    self.out_dense = nn.Linear(12544, NUM_CLASSES)
 
   def forward(self, input):
     # Seg Net
@@ -149,7 +149,7 @@ def main():
     config.log(config)
 
     # Transformations
-    size = 64
+    size = 112
     transformations = transforms.Compose([ 
                                   transforms.Scale(size+5),
                                   transforms.RandomCrop(size),
@@ -165,10 +165,10 @@ def main():
     train_idx, val_idx = splitIndices(train_dataset, config, shuffle = True)
 
 
-    #weights = UpsamplingWeights(train_dataset)
+    weights = UpsamplingWeights(train_dataset)
 
-    #train_sampler = WeightedRandomSampler(weights = weights[train_idx], replacement = True, num_samples = config.num_train)
-    train_sampler = SubsetRandomSampler(train_idx)
+    train_sampler = WeightedRandomSampler(weights = weights[train_idx], replacement = True, num_samples = config.num_train)
+    #train_sampler = SubsetRandomSampler(train_idx)
     val_sampler = SubsetRandomSampler(val_idx)
 
 
