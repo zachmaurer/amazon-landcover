@@ -11,36 +11,32 @@ from utils import Config, parseConfig
 from utils.layers import Flatten
 from utils.constants import NUM_CLASSES, TRAIN_DATA_PATH, TRAIN_LABELS_PATH, NUM_TRAIN, TEST_DATA_PATH, TEST_LABELS_PATH
 from utils import visualize
-
+import numpy as np
 
 Ndim, Cdim, Hdim, Wdim = 0, 1, 2, 3
 
-class VGGNet(nn.Module):
+class ResNet(nn.Module):
   def __init__(self):
     super().__init__()
-    model_conv = torchvision.models.vgg16(pretrained=True)
-    ignored_params = list(map(id, model_conv.classifier.parameters()))
+    model_conv = torchvision.models.resnet50(pretrained=True)
+    ignored_params = list(map(id, model_conv.layer4.parameters())) + list(map(id, model_conv.layer3.parameters()))
     for param in model_conv.parameters():
         if id(param) not in ignored_params:
-            param.requires_grad = False
-    self.features = model_conv.features
-    num_ftrs = list(model_conv.classifier.children())[-1].in_features 
-    mod = list(model_conv.classifier.children())
-    mod.pop()
-    mod.append(nn.Linear(num_ftrs, NUM_CLASSES))
-    self.classifier = nn.Sequential(*mod) #model_conv.classifier
+           param.requires_grad = False
+    num_ftrs = model_conv.fc.in_features
+    model_conv.fc = nn.Linear(num_ftrs, NUM_CLASSES)
+    self.classifier = model_conv
+    
 
   def forward(self, x):
-    f = self.features(x)
-    f = f.view(f.size(0), 512*7*7)
-    y = self.classifier(f)
+    y = self.classifier(x)
     return y
     
     
 
 
 def main():
-    args = parseConfig("VGG16")
+    args = parseConfig("Resnet")
     config = Config(args)
     config.log(config)
     
@@ -48,7 +44,7 @@ def main():
             transforms.CenterCrop(224)
         ])
     train_dataset = NaiveDataset(TRAIN_DATA_PATH, TRAIN_LABELS_PATH, num_examples = NUM_TRAIN, transform=transform)
-    train_idx, val_idx = splitIndices(train_dataset, config, shuffle = True)
+    train_idx, val_idx = splitIndices(train_dataset, config, shuffle =False)
 
     train_sampler = SubsetRandomSampler(train_idx)
     val_sampler = SubsetRandomSampler(val_idx)
@@ -59,14 +55,19 @@ def main():
     config.val_loader = val_loader
 
     # Create Model
-    model = VGGNet()
+    model = ResNet()
     if config.use_gpu:
       model = model.cuda()
 
     # Train and Eval Model
-    print(list(model.classifier.children())[-1])
-    #optimizer_conv = optim.Adam(list(model.classifier.children())[-1].parameters(), config.lr)
-    optimizer_conv = optim.Adam(model.classifier.parameters(), config.lr)
+    params = list(model.classifier.fc.parameters()) + list(model.classifier.layer4.parameters()) + list(model.classifier.layer3.parameters())
+    #numParams = 0
+    #for param in params:
+    #   print(param.size())
+    #   numParams += np.prod(param.data.numpy().shape)
+    #print(numParams)
+    optimizer_conv = optim.Adam(params, config.lr)
+
     results = train(model, config, optimizer=optimizer_conv)
     visualize.plot_results(results, config)
   

@@ -62,8 +62,8 @@ def predict(model, config, loader, dataset = ""):
             image_list.extend(image_names)
             
     preds_var = nn.functional.sigmoid(preds_var)
-    preds_var[preds_var>0.5] = 1
-    preds_var[preds_var<=0.5] = 0
+    preds_var[preds_var>0.2] = 1
+    preds_var[preds_var<=0.2] = 0
     preds = get_label_strings_from_tensor(preds_var.data)
     
     subm['image_name'] = image_list
