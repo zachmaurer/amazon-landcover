@@ -210,8 +210,8 @@ def train(model, config, loss_fn = None, optimizer = None, weight_decay = 0, lr_
             x_var = Variable(x.type(config.dtype))
             y_var = Variable(y.type(config.dtype)) # removed .long() ?
             scores = model(x_var)            
-            loss = softmargin_jaccard_loss_2(loss_fn, scores, y_var, config)
-            #loss = loss_fn(scores, y_var)
+            #loss = softmargin_jaccard_loss_2(loss_fn, scores, y_var, config)
+            loss = loss_fn(scores, y_var)
             loss_history.append(loss.data[0])
             loss_total += loss.data[0]
          
