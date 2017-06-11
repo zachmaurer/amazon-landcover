@@ -12,7 +12,7 @@ from .model import loadModel, countParams, checkpointModel
 from utils.constants import LABEL_LIST, LABEL_WEIGHTS
 import pandas as pd
 import os
-
+from lr_scheduler import *
 
 #TBD - feed in a single tensor into the get_label_strings_from_tensor, rather than doing it per batch
 def predict(model, config, loader, dataset = ""):
@@ -62,8 +62,8 @@ def predict(model, config, loader, dataset = ""):
             image_list.extend(image_names)
             
     preds_var = nn.functional.sigmoid(preds_var)
-    preds_var[preds_var>0.2] = 1
-    preds_var[preds_var<=0.2] = 0
+    preds_var[preds_var>0.5] = 1
+    preds_var[preds_var<=0.5] = 0
     preds = get_label_strings_from_tensor(preds_var.data)
     
     subm['image_name'] = image_list
@@ -89,7 +89,7 @@ def get_label_strings_from_tensor(pred_labels_tensor):
 #   model: the model object
 #   loader: DataLoader in pytorch
 #  
-def eval_performance(model, config, loader, f2 = True, recall = True, acc = True, label = ""):
+def eval_performance(model, config, loader, loss_fn, f2 = True, recall = True, acc = True, label = ""):
     sum_f2 = 0.0
     num_samples_f2 = 0
     num_correct_recall = 0
@@ -97,13 +97,17 @@ def eval_performance(model, config, loader, f2 = True, recall = True, acc = True
     num_correct_acc = 0
     num_samples_acc = 0
 
+    loss_sum = 0.0
     model.eval()
     for x, _, y in loader:
+        y_var = Variable(y.type(config.dtype))
         y = y.type(torch.cuda.ByteTensor) if config.use_gpu else y.type(torch.ByteTensor)
         x_var = Variable(x.type(config.dtype), volatile=True)
         scores = model(x_var)
+        loss = loss_fn(scores, y_var)
         #scores = expit(scores.data.cpu().numpy())
         scores = nn.functional.sigmoid(scores)
+        loss_sum += loss.data[0] 
         preds = scores > 0.5
         if f2:
             sum_f2 += fbeta_score(preds.data.cpu().numpy(), y.cpu().numpy(), beta=2, average='samples')*y.size(0)
@@ -124,8 +128,9 @@ def eval_performance(model, config, loader, f2 = True, recall = True, acc = True
     if acc:
         acc = float(num_correct_acc) / num_samples_acc
         config.log('All or none acc {%s} : Got %d / %d correct (%.2f)' % (label, num_correct_acc, num_samples_acc, 100 * acc))
+    loss = float(loss_sum)/num_samples_f2
     model.train()
-    return f2_score, recall, acc
+    return loss, f2_score, recall, acc
 
 def check_per_class_accuracy(model, config, loader, label = ""):
     num_correct = np.zeros((17,))
@@ -163,7 +168,7 @@ def train(model, config, loss_fn = None, optimizer = None):
         loss_fn = nn.MultiLabelSoftMarginLoss(weight = None).type(config.dtype) # TODO: should the loss function run on the CPU or GPU?
     if not optimizer:
         optimizer = optim.Adam(model.parameters(), lr = config.lr) 
-
+    scheduler = ReduceLROnPlateau(optimizer, 'min', patience=2, epsilon=1e-2, factor=0.5, verbose=True)
     best_f2 = 0.0
     loss_history = [] # per iteration
     train_f2_history = []
@@ -183,7 +188,6 @@ def train(model, config, loss_fn = None, optimizer = None):
         
 
     countParams(model, config)
-
     model.train()
     for epoch in range(config.epochs):
         config.log('\nStarting epoch %d / %d' % (epoch + 1, config.epochs))
@@ -214,8 +218,8 @@ def train(model, config, loss_fn = None, optimizer = None):
             loss.backward()
             optimizer.step()
 
-            grad_magnitude_t = [(x.grad.data.sum(), torch.numel(x.grad.data)) for x in model.parameters() if x.grad.data.sum() != 0.0]
-            grad_magnitude += sum([abs(x[0]) for x in grad_magnitude_t]) #/ sum([x[1] for x in grad_magnitude])
+            #grad_magnitude_t = [(x.grad.data.sum(), torch.numel(x.grad.data)) for x in model.parameters() if x.grad.data.sum() != 0.0]
+            #grad_magnitude += sum([abs(x[0]) for x in grad_magnitude_t]) #/ sum([x[1] for x in grad_magnitude])
 
             # Print Loss
             if config.print_every and (t + 1) % config.print_every == 0:
@@ -228,15 +232,17 @@ def train(model, config, loss_fn = None, optimizer = None):
         config.log("Finished Epoch {}/{}".format(epoch + 1, config.epochs))
         config.log("Evaluating...")
         if config.train_loader:
-            f2, recall, acc = eval_performance(model, config, config.train_loader, label = "train")
+            _, f2, recall, acc = eval_performance(model, config, config.train_loader, loss_fn, label = "train")
             train_f2_history.append(f2)
             train_global_recall_history.append(recall)
             train_all_or_none_acc_history.append(acc)
+            scheduler.step(loss_history[-1], epoch)
             # train_f2_history.append(f2_score(model, config, config.train_loader, "train"))
             # train_all_or_none_acc_history.append(check_all_or_none_accuracy(model, config, config.train_loader, "train"))
             # train_global_recall_history.append(check_global_recall(model, config, config.train_loader, "train"))
         if config.val_loader:
-            f2, recall, acc = eval_performance(model, config, config.val_loader, label = "val")
+            loss, f2, recall, acc = eval_performance(model, config, config.val_loader, loss_fn, label = "val")
+            #scheduler.step(loss, epoch)
             val_f2_history.append(f2)
             val_global_recall_history.append(recall)
             val_all_or_none_acc_history.append(acc)
