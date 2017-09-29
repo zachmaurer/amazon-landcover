@@ -8,10 +8,11 @@ from sklearn.preprocessing import MultiLabelBinarizer
 
 from sklearn.metrics import fbeta_score
 import numpy as np
-from .model import loadModel, countParams, checkpointModel
-from utils.constants import LABEL_LIST, LABEL_WEIGHTS
+from .model import loadModel, countParams, checkpointModel, softmargin_jaccard_loss_2
+from utils.constants import LABEL_LIST, LABEL_WEIGHTS, THRESHOLDS
 import pandas as pd
 import os
+from prettytable import PrettyTable
 
 
 #TBD - feed in a single tensor into the get_label_strings_from_tensor, rather than doing it per batch
@@ -89,14 +90,16 @@ def get_label_strings_from_tensor(pred_labels_tensor):
 #   model: the model object
 #   loader: DataLoader in pytorch
 #  
-def eval_performance(model, config, loader, f2 = True, recall = True, acc = True, label = ""):
+def eval_performance(model, config, loader, f2 = True, recall = True, acc = True, label = "", print_probabilities = False):
+    #thresholds = torch.FloatTensor(THRESHOLDS).cuda() if config.use_gpu else torch.FloatTensor(THRESHOLDS)
+    #thresholds = Variable(thresholds)
     sum_f2 = 0.0
     num_samples_f2 = 0
     num_correct_recall = 0
     num_samples_recall = 0
     num_correct_acc = 0
     num_samples_acc = 0
-
+    class_probabilities = torch.zeros(1, 17).cuda() if config.use_gpu else torch.zeros(1,17)
     model.eval()
     for x, _, y in loader:
         y = y.type(torch.cuda.ByteTensor) if config.use_gpu else y.type(torch.ByteTensor)
@@ -104,7 +107,10 @@ def eval_performance(model, config, loader, f2 = True, recall = True, acc = True
         scores = model(x_var)
         #scores = expit(scores.data.cpu().numpy())
         scores = nn.functional.sigmoid(scores)
-        preds = scores > 0.5
+        if print_probabilities:
+            class_probabilities += scores.data.sum(0)
+        #preds = scores > thresholds.expand(scores.size(0), 17)
+        preds = scores > 0.2
         if f2:
             sum_f2 += fbeta_score(preds.data.cpu().numpy(), y.cpu().numpy(), beta=2, average='samples')*y.size(0)
             num_samples_f2 += y.size(0)
@@ -125,6 +131,14 @@ def eval_performance(model, config, loader, f2 = True, recall = True, acc = True
         acc = float(num_correct_acc) / num_samples_acc
         config.log('All or none acc {%s} : Got %d / %d correct (%.2f)' % (label, num_correct_acc, num_samples_acc, 100 * acc))
     model.train()
+    if print_probabilities:
+        class_probabilities /= num_samples_f2
+        class_probabilities = class_probabilities.cpu().numpy()
+        table = PrettyTable(['Class', 'Average Probability'])
+        for i, x in enumerate(LABEL_LIST):
+            table.add_row([x, class_probabilities[0, i]])
+        config.log(table)
+
     return f2_score, recall, acc
 
 def check_per_class_accuracy(model, config, loader, label = ""):
@@ -158,12 +172,14 @@ def check_per_class_accuracy(model, config, loader, label = ""):
 #   model: the model object
 #   loader: DataLoader in pytorch
 #  
-def train(model, config, loss_fn = None, optimizer = None):
+def train(model, config, loss_fn = None, optimizer = None, weight_decay = 0, lr_decay = 0):
     if not loss_fn:
         loss_fn = nn.MultiLabelSoftMarginLoss(weight = None).type(config.dtype) # TODO: should the loss function run on the CPU or GPU?
     if not optimizer:
-        optimizer = optim.Adam(model.parameters(), lr = config.lr) 
+        optimizer = optim.SGD(model.parameters(), lr = config.lr, momentum = 0.9, weight_decay = weight_decay) 
 
+    step_1, step_2, step_3 = False, False, False
+    lr = config.lr
     best_f2 = 0.0
     loss_history = [] # per iteration
     train_f2_history = []
@@ -186,7 +202,7 @@ def train(model, config, loss_fn = None, optimizer = None):
 
     model.train()
     for epoch in range(config.epochs):
-        config.log('\nStarting epoch %d / %d' % (epoch + 1, config.epochs))
+        config.log('\nStarting epoch %d / %d with learning rate: %.3E' % (epoch + 1, config.epochs, lr))
         loss_total = 0.0
         grad_magnitude = 0.0
         for t, (x, _, y) in enumerate(config.train_loader):
@@ -194,21 +210,11 @@ def train(model, config, loss_fn = None, optimizer = None):
             x_var = Variable(x.type(config.dtype))
             y_var = Variable(y.type(config.dtype)) # removed .long() ?
             scores = model(x_var)            
+            #loss = softmargin_jaccard_loss_2(loss_fn, scores, y_var, config)
             loss = loss_fn(scores, y_var)
             loss_history.append(loss.data[0])
             loss_total += loss.data[0]
-
-            # Evaluate on train and val sets
-            if config.eval_every and (t + 1) % config.eval_every == 0:
-                if config.train_loader:
-                    f2_score(model, config, config.train_loader, "train")
-                    check_all_or_none_accuracy(model, config, config.train_loader, "train")
-                    check_global_recall(model, config, config.train_loader, "train")
-                if config.val_loader:
-                    f2_score(model, config, config.val_loader, "val")
-                    check_all_or_none_accuracy(model, config, config.val_loader, "val")
-                    check_global_recall(model, config, config.val_loader, "val")
-                             
+         
             # Backprop
             optimizer.zero_grad()
             loss.backward()
@@ -222,6 +228,19 @@ def train(model, config, loss_fn = None, optimizer = None):
                 #grad_magnitude = [(x.grad.data.sum(), torch.numel(x.grad.data)) for x in model.parameters() if x.grad.data.sum() != 0.0]
                 #grad_magnitude = sum([abs(x[0]) for x in grad_magnitude]) #/ sum([x[1] for x in grad_magnitude])
                 config.log('t = %d, avg_loss = %.4f, grad_mag = %.4f' % (t + 1, loss_total / (t+1), grad_magnitude / (t+1)))
+        if epoch >= 10 and not step_1: 
+            lr = 1e-1 * lr
+            optimizer = optim.SGD(model.parameters(), lr = lr, momentum = 0.9, weight_decay = weight_decay) 
+            step_1 = True
+        if epoch >= 20 and not step_2:
+            lr = 1e-2 * lr
+            optimizer = optim.SGD(model.parameters(), lr = lr, momentum = 0.9, weight_decay = weight_decay) 
+            step_2 = True
+        if epoch >= 25 and not step_3:
+            lr = lr / 2.0
+            optimizer = optim.SGD(model.parameters(), lr = lr, momentum = 0.9, weight_decay = weight_decay) 
+            step_3 = True
+
 
             gc.collect()
 

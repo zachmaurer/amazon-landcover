@@ -16,8 +16,6 @@ TEST_LABELS_PATH = "./input/sample_submission.csv"
 
 BEST_MODEL_FILENAME = 'best_model.ckpt'
 
-
-
 LABEL_WEIGHTS = FloatTensor([
         10, #'agriculture',
         5e3, #'artisinal_mine',
@@ -58,6 +56,48 @@ LABEL_MAP = {
         15: 'slash_burn',
         16: 'water'
     }
+
+# From Kaggle
+# THRESHOLDS = [
+#         0.245,
+#         0.1375,
+#         0.2225,
+#         0.19,
+#         0.0475,
+#         0.2375,
+#         0.12,
+#         0.0875,
+#         0.265,
+#         0.2175,
+#         0.1925,
+#         0.1625,
+#         0.2625,
+#         0.21,
+#         0.14,
+#         0.085,
+#         0.205
+#     ]
+
+# Average Average Probabilities
+THRESHOLDS = [0.268406,    
+                            0.0144748,     
+                            0.0254243,    
+                            0.0161414,    
+                            0.0150021,    
+                            0.7132,
+                            0.0306173,     
+                            0.0132242,    
+                            0.0580758,    
+                            0.0433481,    
+                            0.0295609,    
+                            0.164735,  
+                            0.947612,    
+                            0.136327,    
+                            0.0146465,     
+                            0.0143424,    
+                            0.089444]
+
+
 
 LABEL_LIST = ['agriculture',
         'artisinal_mine',

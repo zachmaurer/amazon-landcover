@@ -10,6 +10,13 @@ from PIL import Image
 import random
 from utils.constants import LABEL_LIST
 
+import numpy as np
+
+#import scipy
+#from scipy.optimize import nnls
+from scipy.optimize import lsq_linear
+from scipy.sparse import csr_matrix
+
 
 def splitIndices(dataset, config, shuffle = True):
     random.seed(config.seed)
@@ -26,11 +33,19 @@ def splitIndices(dataset, config, shuffle = True):
         num_val = length - config.num_train
         val = indices[0:num_val]    
         train = indices[num_val:]
+        config.num_val = len(val)
     return train, val
 
 
-
-
+def UpsamplingWeights(dataset):
+    M_cpu = dataset.labels_tensor.cpu().numpy()
+    w_vec, res = np.linalg.lstsq(M_cpu.T,np.ones((17,)))[0:2]
+    M_sparse_T = csr_matrix(M_cpu.T)
+    w_vec, res = np.linalg.lstsq(M_cpu.T,np.ones((17,)))[0:2]
+    frac = 1/w_vec.shape[0]
+    res_tuple = lsq_linear(M_sparse_T,np.ones((17,)),bounds=(frac/4,np.inf),verbose=1)
+    w_lsq_lin = res_tuple['x']/np.sum(res_tuple['x'])*100
+    return w_lsq_lin
 
 
 #this is the naive implementation which pulls from file every time you get an item. no caching. Probably not useful anymore
@@ -47,12 +62,18 @@ class NaiveDataset(Dataset):
     """
     def load_image(self, idx):
         image_name = self.labels_df['image_name'][idx]
-        im = Image.open(self.data_path + image_name + '.jpg')
-        im = np.array(im)[:,:,:3]
-        im = np.reshape(im,(im.shape[2],im.shape[0],im.shape[1]))
-        return torch.from_numpy(im), image_name
+        if self.transforms:
+            im = Image.open(self.data_path + image_name + '.jpg')
+            im = self.transforms(im) / 255.0
+            return im, image_name
+        else:
+            im = Image.open(self.data_path + image_name + '.jpg')
+            im = np.array(im)[:,:,:3] / 255.0
+            im = np.reshape(im,(im.shape[2],im.shape[0],im.shape[1]))
+            #print(im.shape)
+            return torch.from_numpy(im), image_name
     
-    def __init__(self, data_path, labels_path, num_examples=None):
+    def __init__(self, data_path, labels_path, num_examples = None, transforms = None):
         self.labels_df = pd.read_csv(labels_path)
         if num_examples is None:
             self.num_examples = self.labels_df.shape[0]
@@ -66,6 +87,7 @@ class NaiveDataset(Dataset):
         self.labels_tensor = torch.from_numpy(self.mlb.fit_transform(labels_words))
         
         self.data_path = data_path
+        self.transforms = transforms
 
     def __getitem__(self, idx):
         data_tensor, image_name = self.load_image(idx)
